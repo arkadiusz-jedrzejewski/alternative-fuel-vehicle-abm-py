@@ -28,7 +28,7 @@ def get_trajectory(number):
 
 
 #folder_name = 'SL_50L_0hs_0hdp_8aphev_0.6abev_0_0_0'
-folder_name = 'SL_50L_0hs_0hdp_7aphev_0.6abev_0_0_0'
+folder_name = 'SL_50L_0hs_0hdp_12aphev_0.4abev_0_0_0'
 
 #folder_name = 'SL_50L_1hs_1hdp_15aphev_4.5abev_0_0_0'
 
@@ -72,4 +72,6 @@ ax.legend(handles, ['hev', 'phev', 'bev', 'none'])
 print(means)
 print(sems)
 
+
+plt.savefig(f'D:/OneDrive - Politechnika Wroclawska/manuscripts-epf/2021_cars/calibration/00/{folder_name}.png')
 plt.show()
