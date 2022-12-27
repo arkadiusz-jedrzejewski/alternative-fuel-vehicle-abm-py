@@ -30,7 +30,7 @@ def create_file(num_ave,
 
 
 def error_measure(target, data):
-    return np.sum((target - data) ** 2)
+    return np.mean((target - data) ** 2)
 
 
 if __name__ == '__main__':
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     adoption_target = [0.489, 0.319, 0.192]
 
     alpha_phevs = [6, 7, 8]
-    alpha_bevs = [0.4, 0.5, 0.6]
+    alpha_bevs = [0.4, 0.5, 0.6, 0.7]
 
     parm_space = [(alpha_phev, alpha_bev) for alpha_phev in alpha_phevs for alpha_bev in alpha_bevs]
 
@@ -51,9 +51,10 @@ if __name__ == '__main__':
 
     time_horizon = 50
 
-    num_ave = 10
+    num_ave = 15
     ave_tab = np.arange(num_ave)
 
+    error_dict = {}
     for alpha_phev, alpha_bev in parm_space:
         print(f"(alpha_phev, alpha_bev):\t({alpha_phev},{alpha_bev})")
         if network_type == "SL":
@@ -87,10 +88,20 @@ if __name__ == '__main__':
                              folder_name=folder_name),
                      ave_tab)
 
+        total_error = 0
         for num_ave in ave_tab:
             file_name = folder_name + f"/sim-{num_ave}.txt"
-            print(file_name)
+            #print(file_name)
             adoption_sim = np.loadtxt(file_name)[-1, :3]
-            print(adoption_sim)
+            #print(adoption_sim)
             error = error_measure(adoption_target, adoption_sim)
-            print(error)
+            total_error += error
+        total_error /= len(ave_tab)
+        print("MSE:", total_error)
+        error_dict[alpha_phev, alpha_bev] = total_error
+        best_parms = min(error_dict, key=error_dict.get)
+
+    print("Best parameters:", best_parms)
+    print(len(ave_tab))
+    print("MSE:", error_dict[best_parms])
+    print(error_dict)
