@@ -4,6 +4,8 @@ import subprocess
 import multiprocessing as mp
 from functools import partial
 import matplotlib.pyplot as plt
+import time
+import datetime
 
 
 def create_file(num_ave,
@@ -38,26 +40,29 @@ if __name__ == '__main__':
 
     adoption_target = [0.489, 0.319, 0.192]
 
-    alpha_phevs = np.linspace(2, 5, 10)  # [2, 3, 4, 5]
-    alpha_bevs = np.linspace(0.2, 0.5, 10)  # [0.2, 0.3, 0.4, 0.5]
+    alpha_phevs = np.linspace(4, 15, 12)  # [2, 3, 4, 5]
+    alpha_bevs = np.linspace(0, 1.5, 16)  # [0.2, 0.3, 0.4, 0.5]
+    num_parms = len(alpha_phevs) * len(alpha_bevs)
 
     parm_space = [(alpha_phev, alpha_bev) for alpha_phev in alpha_phevs for alpha_bev in alpha_bevs]
 
-    network_type = "SL"  # "SL" - square lattice, "WS" Watts Strogatz network
+    network_type = "WS"  # "SL" - square lattice, "WS" Watts Strogatz network
 
-    heterogeneous_susceptibilities = 0
-    heterogeneous_driving_patterns = 0
+    heterogeneous_susceptibilities = 1
+    heterogeneous_driving_patterns = 1
 
     h_hev, h_phev, h_bev = 0, 0, 0
 
-    time_horizon = 50
+    time_horizon = 20
 
-    num_ave = 100
+    num_ave = 500
     ave_tab = np.arange(num_ave)
+
+    start = time.time()
+    counter = 0
 
     error_dict = {}
     for alpha_phev, alpha_bev in parm_space:
-        print(f"(alpha_phev, alpha_bev):\t({alpha_phev},{alpha_bev})")
         if network_type == "SL":
             L = 32  # linear system size (N = L x L: number of agents)
             network_parameters = (L,)
@@ -65,7 +70,7 @@ if __name__ == '__main__':
         elif network_type == "WS":
             N = 1024  # number of agents
             k = 4  # average node degree (must be divisible by 2)
-            beta = 0  # rewiring probability
+            beta = 1  # rewiring probability
             network_parameters = (N, k, beta)
             folder_name = f'{network_type}_{N}N_{k}k_{beta}beta_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}'
 
@@ -98,12 +103,17 @@ if __name__ == '__main__':
             error = error_measure(adoption_target, adoption_sim)
             total_error += error
         total_error /= len(ave_tab)
-        print("MSE:", total_error)
+        print(f"(alpha_phev, alpha_bev):\t({alpha_phev},{alpha_bev})", "MSE:", total_error)
         error_dict[alpha_phev, alpha_bev] = total_error
         best_parms = min(error_dict, key=error_dict.get)
 
+        end = time.time()
+        counter += 1
+        ave_time = (end - start) / counter
+        # print(f"average time:\n{ave_time}s")
+        print("estimated remaining time:\t" + str(datetime.timedelta(seconds=int((num_parms - counter) * ave_time))))
+
     print("Best parameters:", best_parms)
-    print(len(ave_tab))
     print("MSE:", error_dict[best_parms])
     # print(error_dict)
 
@@ -113,9 +123,9 @@ if __name__ == '__main__':
 
     for in1, i1 in enumerate(alpha_phevs):
         for in2, i2 in enumerate(alpha_bevs):
-            print(in1, i1)
+            # print(in1, i1)
             errors[in2, in1] = error_dict[(i1, i2)]
-    print(errors)
+
     # x, y = zip(*error_dict)
     # print(x)
     # print(y)
