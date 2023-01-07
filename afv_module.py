@@ -35,23 +35,40 @@ def error_measure(target, data):
     return np.mean((target - data) ** 2)
 
 
-def run_single_simulation(data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns,
-                          alpha_phev,
-                          alpha_bev, h_hev, h_phev, h_bev, num_ave, time_horizon):
+def get_model_name(network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
     network_type = network_params[0]  # "SL" - square lattice, "WS" Watts Strogatz network
     if network_type == "SL":
         (_, L) = network_params  # linear system size (N = L x L: number of agents)
         model_name = f"{network_type}_{L}L_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
-        folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
     elif network_type == "WS":
         (_, N, k, beta) = network_params
         model_name = f"{network_type}_{N}N_{k}k_{beta}beta_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
-        folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
+    return model_name
+
+
+def get_folder_name(model_name, alpha_phev, alpha_bev, h_hev, h_phev, h_bev, data_dir):
+    folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
+    return folder_name
+
+
+def run_single_simulation(network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns,
+                          alpha_phev,
+                          alpha_bev, h_hev, h_phev, h_bev, num_ave, time_horizon, folder_name):
+
 
     if not os.path.exists(folder_name):
         os.mkdir(folder_name)
 
     np.savetxt(folder_name + '/num_ave.csv', [num_ave], fmt="%i")
+    np.savetxt(folder_name + '/model_params.csv', np.column_stack([heterogeneous_susceptibilities,
+                                                                   heterogeneous_driving_patterns,
+                                                                   alpha_phev,
+                                                                   alpha_bev,
+                                                                   h_hev,
+                                                                   h_phev,
+                                                                   h_bev,
+                                                                   time_horizon]),
+               fmt=("%i,%i," + "%.18f," * 5 + "%i"))
 
     sim_numbers = np.arange(num_ave)
     with mp.Pool(6) as pool:
@@ -67,7 +84,6 @@ def run_single_simulation(data_dir, network_params, heterogeneous_susceptibiliti
                          time_horizon=time_horizon,
                          folder_name=folder_name),
                  sim_numbers)
-    return model_name, folder_name
 
 
 def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params, heterogeneous_susceptibilities,
@@ -78,22 +94,33 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
 
     parm_space = [(alpha_phev, alpha_bev) for alpha_phev in alpha_phevs for alpha_bev in alpha_bevs]
 
+    model_name = get_model_name(network_params=network_params,
+                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_driving_patterns=heterogeneous_driving_patterns)
+
     start = time.time()
     counter = 0
 
     error_dict = {}
     for alpha_phev, alpha_bev in parm_space:
-        model_name, folder_name = run_single_simulation(data_dir=data_dir,
-                                                        network_params=network_params,
-                                                        heterogeneous_susceptibilities=heterogeneous_susceptibilities,
-                                                        heterogeneous_driving_patterns=heterogeneous_driving_patterns,
-                                                        alpha_phev=alpha_phev,
-                                                        alpha_bev=alpha_bev,
-                                                        h_hev=0,
-                                                        h_phev=0,
-                                                        h_bev=0,
-                                                        num_ave=500,
-                                                        time_horizon=20)
+        folder_name = get_folder_name(model_name=model_name,
+                                      alpha_phev=alpha_phev,
+                                      alpha_bev=alpha_bev,
+                                      h_hev=0,
+                                      h_phev=0,
+                                      h_bev=0,
+                                      data_dir=data_dir)
+        run_single_simulation(network_params=network_params,
+                              heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                              heterogeneous_driving_patterns=heterogeneous_driving_patterns,
+                              alpha_phev=alpha_phev,
+                              alpha_bev=alpha_bev,
+                              h_hev=0,
+                              h_phev=0,
+                              h_bev=0,
+                              num_ave=500,
+                              time_horizon=20,
+                              folder_name=folder_name)
         sim_numbers = np.arange(int(np.loadtxt(folder_name + "/num_ave.csv")))
         total_error = 0
         for sim_number in sim_numbers:
@@ -129,3 +156,57 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
 
     best_parms = (best_parms[0], best_parms[1], error_dict[best_parms])
     np.savetxt(folder_name + f"/{model_name}_best_parms.csv", best_parms, fmt="%.18f", delimiter=",")
+
+
+def run_diagram_simulations(cal_data_dir, data_dir, network_params, heterogeneous_susceptibilities,
+                            heterogeneous_driving_patterns):
+    model_name = get_model_name(network_params=network_params,
+                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_driving_patterns=heterogeneous_driving_patterns)
+    alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
+
+    print(
+        f"{network_params} {heterogeneous_susceptibilities}hs{heterogeneous_driving_patterns}hdp:\ta_phev={alpha_phev}\ta_bev={alpha_bev}\tMSE={mse}")
+
+    num_h = 20
+    h_start = 0
+    h_end = 4
+    hs = np.linspace(h_start, h_end, num_h)
+    h_inds = np.arange(num_h)
+
+    h_inds_tuples = [(h, 0, 0) for h in h_inds] + [(0, h, 0) for h in h_inds[1:]] + [(0, 0, h) for h in h_inds[1:]]
+    h_tuples = [(h, 0, 0) for h in hs] + [(0, h, 0) for h in hs[1:]] + [(0, 0, h) for h in hs[1:]]
+
+    data_dir = data_dir + "/" + model_name
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+    np.savetxt(data_dir + '/h_values.csv', np.column_stack((h_inds, hs)), fmt=("%i", "%.18f"))
+
+    start = time.time()
+    counter = 0
+    for ind, h_inds in enumerate(h_inds_tuples):
+        (h_hev_ind, h_phev_ind, h_bev_ind) = h_inds
+        (h_hev, h_phev, h_bev) = h_tuples[ind]
+        folder_name = get_folder_name(model_name=model_name,
+                                      alpha_phev=alpha_phev,
+                                      alpha_bev=alpha_bev,
+                                      h_hev=h_hev_ind,
+                                      h_phev=h_phev_ind,
+                                      h_bev=h_bev_ind,
+                                      data_dir=data_dir)
+
+        run_single_simulation(network_params=network_params,
+                              heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                              heterogeneous_driving_patterns=heterogeneous_driving_patterns,
+                              alpha_phev=alpha_phev,
+                              alpha_bev=alpha_bev,
+                              h_hev=h_hev,
+                              h_phev=h_phev,
+                              h_bev=h_bev,
+                              num_ave=500,
+                              time_horizon=20,
+                              folder_name=folder_name)
+        end = time.time()
+        counter += 1
+        ave_time = (end - start) / counter
+        print(f"{h_inds}\testimated remaining time:\t" + str(datetime.timedelta(seconds=int((len(h_inds_tuples) - counter) * ave_time))))
