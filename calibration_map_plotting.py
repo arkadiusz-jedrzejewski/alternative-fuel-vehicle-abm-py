@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import time
 import datetime
 
+
 def error_measure(target, data):
     return np.mean((target - data) ** 2)
 
@@ -16,10 +17,10 @@ alpha_bevs = np.linspace(0, 1.5, 16)  # [0.2, 0.3, 0.4, 0.5]
 parm_space = [(alpha_phev, alpha_bev) for alpha_phev in alpha_phevs for alpha_bev in alpha_bevs]
 num_parms = len(parm_space)
 
-network_type = "SL"  # "SL" - square lattice, "WS" Watts Strogatz network
+network_type = "WS"  # "SL" - square lattice, "WS" Watts Strogatz network
 
-heterogeneous_susceptibilities = 0
-heterogeneous_driving_patterns = 0
+heterogeneous_susceptibilities = 1
+heterogeneous_driving_patterns = 1
 
 h_hev, h_phev, h_bev = 0, 0, 0
 
@@ -40,7 +41,7 @@ for alpha_phev, alpha_bev in parm_space:
     elif network_type == "WS":
         N = 1024  # number of agents
         k = 4  # average node degree (must be divisible by 2)
-        beta = 0  # rewiring probability
+        beta = 1  # rewiring probability
         network_parameters = (N, k, beta)
         model_name = f"{network_type}_{N}N_{k}k_{beta}beta_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
         folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
@@ -60,8 +61,8 @@ for alpha_phev, alpha_bev in parm_space:
     print(f"(alpha_phev, alpha_bev):\t({alpha_phev},{alpha_bev})\tMSE:\t{total_error}")
     print("estimated remaining time:\t" + str(datetime.timedelta(seconds=int((num_parms - counter) * ave_time))))
     error_dict[alpha_phev, alpha_bev] = total_error
-    best_parms = min(error_dict, key=error_dict.get)
 
+best_parms = min(error_dict, key=error_dict.get)
 print("Best parameters:", best_parms, "MSE:", error_dict[best_parms])
 
 alpha_phevs_m, alpha_bevs_m = np.meshgrid(alpha_phevs, alpha_bevs)
@@ -81,9 +82,9 @@ folder_name = data_dir + "/map_results"
 if not os.path.exists(folder_name):
     os.mkdir(folder_name)
 
-np.savetxt(folder_name + f"/{model_name}_mses.csv", errors, fmt="%.18f")
-np.savetxt(folder_name + f"/{model_name}_alpha_phevs_m.csv", alpha_phevs_m, fmt="%.18f")
-np.savetxt(folder_name + f"/{model_name}_alpha_bevs_m.csv", alpha_bevs_m, fmt="%.18f")
+np.savetxt(folder_name + f"/{model_name}_mses.csv", errors, fmt="%.18f", delimiter=", ")
+np.savetxt(folder_name + f"/{model_name}_alpha_phevs_m.csv", alpha_phevs_m, fmt="%.18f", delimiter=",")
+np.savetxt(folder_name + f"/{model_name}_alpha_bevs_m.csv", alpha_bevs_m, fmt="%.18f", delimiter=",")
 
 best_parms = (best_parms[0], best_parms[1], error_dict[best_parms])
-np.savetxt(folder_name + f"/{model_name}_best_parms.csv", best_parms, fmt="%.18f")
+np.savetxt(folder_name + f"/{model_name}_best_parms.csv", best_parms, fmt="%.18f", delimiter=",")

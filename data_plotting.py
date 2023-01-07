@@ -67,8 +67,8 @@ def plot_fig(fig, ax, flag=True):
             ax.plot(h_values[:, 1], means[vehicle_type][0, :], 'x--')
         ax.set_ylim([0, 1])
 
-fig, axs = plt.subplots(1, 3)
 
+fig, axs = plt.subplots(1, 3)
 
 folder_name = 'SL_50L_1hs_1hdp_8aphev_0.6abev_hev'
 ave_num = int(np.loadtxt(folder_name + '\\num_ave.csv'))
