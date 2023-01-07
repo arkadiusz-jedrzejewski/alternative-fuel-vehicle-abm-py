@@ -8,7 +8,7 @@ import time
 import datetime
 
 
-def create_file(num_ave,
+def create_file(sim_num,
                 network_params,
                 heterogeneous_susceptibilities,
                 heterogeneous_driving_patterns,
@@ -19,7 +19,7 @@ def create_file(num_ave,
                 h_bev,
                 time_horizon,
                 folder_name):
-    file_name = folder_name + f"/sim-{num_ave}.txt"
+    file_name = folder_name + f"/sim-{sim_num}.txt"
     network_type = network_params[0]
     if network_type == "SL":
         (_, L) = network_params
@@ -35,7 +35,9 @@ def create_file(num_ave,
 def error_measure(target, data):
     return np.mean((target - data) ** 2)
 
-def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
+
+def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params, heterogeneous_susceptibilities,
+                              heterogeneous_driving_patterns):
     adoption_target = [0.489, 0.319, 0.192]
 
     num_parms = len(alpha_phevs) * len(alpha_bevs)
@@ -49,7 +51,7 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
     time_horizon = 20
 
     num_ave = 500
-    ave_tab = np.arange(num_ave)
+    sim_numbers = np.arange(num_ave)
 
     start = time.time()
     counter = 0
@@ -82,15 +84,15 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
                              h_bev=h_bev,
                              time_horizon=time_horizon,
                              folder_name=folder_name),
-                     ave_tab)
+                     sim_numbers)
 
         total_error = 0
-        for num_ave in ave_tab:
-            file_name = folder_name + f"/sim-{num_ave}.txt"
+        for sim_number in sim_numbers:
+            file_name = folder_name + f"/sim-{sim_number}.txt"
             adoption_sim = np.loadtxt(file_name)[-1, :3]
             error = error_measure(adoption_target, adoption_sim)
             total_error += error
-        total_error /= len(ave_tab)
+        total_error /= len(sim_numbers)
         end = time.time()
         counter += 1
         ave_time = (end - start) / counter
@@ -118,6 +120,7 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
 
     best_parms = (best_parms[0], best_parms[1], error_dict[best_parms])
     np.savetxt(folder_name + f"/{model_name}_best_parms.csv", best_parms, fmt="%.18f", delimiter=",")
+
 
 if __name__ == '__main__':
 
