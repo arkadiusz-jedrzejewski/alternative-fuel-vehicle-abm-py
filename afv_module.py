@@ -54,8 +54,6 @@ def get_folder_name(model_name, alpha_phev, alpha_bev, h_hev, h_phev, h_bev, dat
 def run_single_simulation(network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns,
                           alpha_phev,
                           alpha_bev, h_hev, h_phev, h_bev, num_ave, time_horizon, folder_name):
-
-
     if not os.path.exists(folder_name):
         os.mkdir(folder_name)
 
@@ -209,4 +207,66 @@ def run_diagram_simulations(cal_data_dir, data_dir, network_params, heterogeneou
         end = time.time()
         counter += 1
         ave_time = (end - start) / counter
-        print(f"{h_inds}\testimated remaining time:\t" + str(datetime.timedelta(seconds=int((len(h_inds_tuples) - counter) * ave_time))))
+        print(f"{h_inds}\testimated remaining time:\t" + str(
+            datetime.timedelta(seconds=int((len(h_inds_tuples) - counter) * ave_time))))
+
+
+def get_trajectories(folder_name):
+    num_ave = int(np.loadtxt(folder_name + "/num_ave.csv"))
+    time_horizon = int(np.loadtxt(folder_name + "/model_params.csv", delimiter=",")[-1])
+    time_horizon += 1
+    trajectories = {
+        'hev': np.zeros([num_ave, time_horizon]),
+        'phev': np.zeros([num_ave, time_horizon]),
+        'bev': np.zeros([num_ave, time_horizon]),
+        'none': np.zeros([num_ave, time_horizon])
+    }
+
+    for i in range(num_ave):
+        for j, item in enumerate(trajectories.keys()):
+            trajectories[item][i, :] = np.loadtxt(folder_name + f'/sim-{i}.txt')[:, j]
+
+    return trajectories
+
+
+def calculate_mean_and_quantiles(data):
+    q95 = np.quantile(data, q=0.95, axis=0)
+    q05 = np.quantile(data, q=0.05, axis=0)
+    mean = np.mean(data, axis=0)
+    return mean, q05, q95
+
+
+def get_mean_and_quantiles(folder_name):
+    trajectories = get_trajectories(folder_name=folder_name)
+    result = []
+    for vehicle_type in trajectories.keys():
+        mean, q05, q95 = calculate_mean_and_quantiles(trajectories[vehicle_type])
+        result.append(mean)
+    #print(result)
+    return result
+
+
+def get_diagrams(cal_data_dir, data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
+    model_name = get_model_name(network_params=network_params,
+                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_driving_patterns=heterogeneous_driving_patterns)
+    alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
+    data_dir = data_dir + "/" + model_name
+    h_values = np.loadtxt(data_dir + '/h_values.csv')
+
+    hevs, phevs, bevs, nones, = [], [], [], []
+    for h_index, h in h_values:
+        h_index = int(h_index)
+        folder_name = get_folder_name(model_name=model_name,
+                                      alpha_phev=alpha_phev,
+                                      alpha_bev=alpha_bev,
+                                      h_hev=0,
+                                      h_phev=0,
+                                      h_bev=h_index,
+                                      data_dir=data_dir)
+        hev, phev, bev, none = get_mean_and_quantiles(folder_name)
+        hevs.append(hev[-1])
+        phevs.append(phev[-1])
+        bevs.append(bev[-1])
+        nones.append(none[-1])
+    return hevs, phevs, bevs, nones, h_values[:, 1]
