@@ -47,7 +47,8 @@ def get_model_name(network_params, heterogeneous_susceptibilities, heterogeneous
     return model_name
 
 
-def get_folder_name(model_name, alpha_phev, alpha_bev, h_hev, h_phev, h_bev, data_dir):
+def get_folder_name(model_name, alpha_phev, alpha_bev, hs, data_dir):
+    h_hev, h_phev, h_bev = hs
     folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
     return folder_name
 
@@ -105,9 +106,7 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
         folder_name = get_folder_name(model_name=model_name,
                                       alpha_phev=alpha_phev,
                                       alpha_bev=alpha_bev,
-                                      h_hev=0,
-                                      h_phev=0,
-                                      h_bev=0,
+                                      hs=(0, 0, 0),
                                       data_dir=data_dir)
         run_single_simulation(network_params=network_params,
                               heterogeneous_susceptibilities=heterogeneous_susceptibilities,
@@ -184,14 +183,11 @@ def run_diagram_simulations(cal_data_dir, data_dir, network_params, heterogeneou
     start = time.time()
     counter = 0
     for ind, h_inds in enumerate(h_inds_tuples):
-        (h_hev_ind, h_phev_ind, h_bev_ind) = h_inds
         (h_hev, h_phev, h_bev) = h_tuples[ind]
         folder_name = get_folder_name(model_name=model_name,
                                       alpha_phev=alpha_phev,
                                       alpha_bev=alpha_bev,
-                                      h_hev=h_hev_ind,
-                                      h_phev=h_phev_ind,
-                                      h_bev=h_bev_ind,
+                                      hs=h_inds,
                                       data_dir=data_dir)
 
         run_single_simulation(network_params=network_params,
@@ -248,31 +244,50 @@ def get_mean_and_quantiles(folder_name):
     return result
 
 
-def get_diagrams(cal_data_dir, data_dir, network_params, heterogeneous_susceptibilities,
-                 heterogeneous_driving_patterns):
+def get_diagram_data(cal_data_dir, data_dir, network_params, heterogeneous_susceptibilities,
+                     heterogeneous_driving_patterns, h_type):
     model_name = get_model_name(network_params=network_params,
                                 heterogeneous_susceptibilities=heterogeneous_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
-    data_dir = data_dir + "/" + model_name
-    h_values = np.loadtxt(data_dir + '/h_values.csv')
+    data_dir_path = data_dir + "/" + model_name
+    h_values = np.loadtxt(data_dir_path + '/h_values.csv')
 
     hevs, phevs, bevs, nones, = [], [], [], []
+    sem_hevs, sem_phevs, sem_bevs, sem_nones, = [], [], [], []
     for h_index, h in h_values:
         h_index = int(h_index)
+
+        match h_type:
+            case "h_hev":
+                hs = (h_index, 0, 0)
+            case "h_phev":
+                hs = (0, h_index, 0)
+            case "h_bev":
+                hs = (0, 0, h_index)
         folder_name = get_folder_name(model_name=model_name,
                                       alpha_phev=alpha_phev,
                                       alpha_bev=alpha_bev,
-                                      h_hev=0,
-                                      h_phev=0,
-                                      h_bev=h_index,
-                                      data_dir=data_dir)
+                                      hs=hs,
+                                      data_dir=data_dir_path)
         hev, phev, bev, none = get_mean_and_quantiles(folder_name)
         hevs.append(hev[0][-1])
+        sem_hevs.append(hev[3][-1])
         phevs.append(phev[0][-1])
+        sem_phevs.append(phev[3][-1])
         bevs.append(bev[0][-1])
+        sem_bevs.append(bev[3][-1])
         nones.append(none[0][-1])
-    return hevs, phevs, bevs, nones, h_values[:, 1]
+        sem_nones.append(none[3][-1])
+
+    result_folder_name = data_dir + f"/diagram_data"
+    if not os.path.exists(result_folder_name):
+        os.mkdir(result_folder_name)
+
+
+    data = (h_values[:, 1], hevs, sem_hevs, phevs, sem_phevs, bevs, sem_bevs, nones, sem_nones)
+    np.savetxt(result_folder_name + "/" + model_name + "_" + h_type + ".csv", np.transpose(data), delimiter=',')
+    return h_values[:, 1], hevs, sem_hevs, phevs, sem_phevs, bevs, sem_bevs, nones, sem_nones
 
 
 def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
@@ -293,7 +308,6 @@ def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities
     for i in range(4):
         plt.fill_between(range(len(result[i][1])), result[i][1], result[i][2], alpha=0.2)
         plt.errorbar(range(len(result[i][0])), result[i][0], yerr=result[i][3], fmt=':.', label=labels[i])
-        # plt.plot(result[i][0], '--.')
 
     title_string = f"{model_name} aphev={alpha_phev:.0f} abev={alpha_bev:.1f}"
     plt.title(title_string)
@@ -302,7 +316,6 @@ def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities
     plt.xlim([0, len(result[0][0]) - 1])
     plt.ylim([0, 1])
     plt.legend(loc="upper right")
-    #plt.legend(["HEV", "PHEV", "BEV", "NONE"])
 
     result_folder_name = cal_data_dir + f"/calibration_plots"
     if not os.path.exists(result_folder_name):
