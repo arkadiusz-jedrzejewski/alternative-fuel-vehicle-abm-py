@@ -36,15 +36,19 @@ def error_measure(target, data):
     return np.mean((target - data) ** 2)
 
 
-def get_model_name(network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
-    network_type = network_params[0]  # "SL" - square lattice, "WS" Watts Strogatz network
+def get_network_name(network_params):
+    network_type = network_params[0]
     if network_type == "SL":
         (_, L) = network_params  # linear system size (N = L x L: number of agents)
-        model_name = f"{network_type}_{L}L_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
+        network_name = f"{network_type}_{L}L"
     elif network_type == "WS":
         (_, N, k, beta) = network_params
-        model_name = f"{network_type}_{N}N_{k}k_{beta}beta_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
-    return model_name
+        network_name = f"{network_type}_{N}N_{k}k_{beta}beta"
+    return network_name
+
+
+def get_model_name(network_name, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
+    return f"{network_name}_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
 
 
 def get_folder_name(model_name, alpha_phev, alpha_bev, hs, data_dir):
@@ -94,7 +98,7 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
 
     parm_space = [(alpha_phev, alpha_bev) for alpha_phev in alpha_phevs for alpha_bev in alpha_bevs]
 
-    model_name = get_model_name(network_params=network_params,
+    model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_susceptibilities=heterogeneous_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
 
@@ -158,7 +162,7 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
 
 def run_diagram_simulations(cal_data_dir, data_dir, network_params, heterogeneous_susceptibilities,
                             heterogeneous_driving_patterns):
-    model_name = get_model_name(network_params=network_params,
+    model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_susceptibilities=heterogeneous_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
@@ -246,7 +250,7 @@ def get_mean_and_quantiles(folder_name):
 
 def get_diagram_data(cal_data_dir, data_dir, network_params, heterogeneous_susceptibilities,
                      heterogeneous_driving_patterns, h_type):
-    model_name = get_model_name(network_params=network_params,
+    model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_susceptibilities=heterogeneous_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
@@ -284,14 +288,13 @@ def get_diagram_data(cal_data_dir, data_dir, network_params, heterogeneous_susce
     if not os.path.exists(result_folder_name):
         os.mkdir(result_folder_name)
 
-
     data = (h_values[:, 1], hevs, sem_hevs, phevs, sem_phevs, bevs, sem_bevs, nones, sem_nones)
     np.savetxt(result_folder_name + "/" + model_name + "_" + h_type + ".csv", np.transpose(data), delimiter=',')
     return h_values[:, 1], hevs, sem_hevs, phevs, sem_phevs, bevs, sem_bevs, nones, sem_nones
 
 
 def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
-    model_name = get_model_name(network_params=network_params,
+    model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_susceptibilities=heterogeneous_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
@@ -323,3 +326,41 @@ def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities
 
     plt.savefig(result_folder_name + "/" + title_string + ".png")
     plt.clf()
+
+
+def get_diagram(cal_data_dir, data_dir, network_params, h_type):
+    result_folder_name = data_dir + f"/diagram_data"
+    network_name = get_network_name(network_params=network_params)
+    title_string = ""
+    mark_it = 0
+    marks = ["d", ".", "^", "x"]
+    fig, ax = plt.subplots(1, 3, figsize=(10, 6))
+    for heterogeneous_susceptibilities in [0, 1]:
+        for heterogeneous_driving_patterns in [0, 1]:
+            model_name = get_model_name(network_name=network_name,
+                                        heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                        heterogeneous_driving_patterns=heterogeneous_driving_patterns)
+            alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
+            title_string += f"{model_name} aphev={alpha_phev:.0f} abev={alpha_bev:.1f} {h_type}\n"
+            data = np.loadtxt(result_folder_name + "/" + model_name + "_" + h_type + ".csv", delimiter=',')
+            for i in range(3):
+                ax[i].errorbar(data[:, 0],
+                               data[:, 1 + i * 2],
+                               yerr=data[:, 2 + i * 2],
+                               fmt=":" + marks[mark_it],
+                               markersize=5,
+                               label=f"{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp")
+                ax[i].set_ylim([0, 1])
+                ax[i].set_xlabel(h_type)
+                ax[i].set_ylabel("Adoption level")
+            mark_it += 1
+    plt.suptitle(title_string)
+    plt.legend(loc="upper right")
+    plt.tight_layout()
+
+    plot_folder_name = data_dir + f"/diagram_plots"
+    if not os.path.exists(plot_folder_name):
+        os.mkdir(plot_folder_name)
+
+    plt.savefig(plot_folder_name + "/" + network_name + f"_{h_type}" + ".png")
+    plt.show()
