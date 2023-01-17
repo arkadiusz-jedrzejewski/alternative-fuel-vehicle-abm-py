@@ -5,6 +5,7 @@ import multiprocessing as mp
 from functools import partial
 import time
 import datetime
+import matplotlib.pyplot as plt
 
 
 def create_file(sim_num,
@@ -233,20 +234,22 @@ def calculate_mean_and_quantiles(data):
     q95 = np.quantile(data, q=0.95, axis=0)
     q05 = np.quantile(data, q=0.05, axis=0)
     mean = np.mean(data, axis=0)
-    return mean, q05, q95
+    sem = np.std(data, axis=0, ddof=1) / np.sqrt(np.size(data, axis=0))  # standard error of the mean
+    return mean, q05, q95, sem
 
 
 def get_mean_and_quantiles(folder_name):
     trajectories = get_trajectories(folder_name=folder_name)
     result = []
     for vehicle_type in trajectories.keys():
-        mean, q05, q95 = calculate_mean_and_quantiles(trajectories[vehicle_type])
-        result.append(mean)
-    #print(result)
+        results = calculate_mean_and_quantiles(trajectories[vehicle_type])
+        result.append(results)
+    # print(result)
     return result
 
 
-def get_diagrams(cal_data_dir, data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
+def get_diagrams(cal_data_dir, data_dir, network_params, heterogeneous_susceptibilities,
+                 heterogeneous_driving_patterns):
     model_name = get_model_name(network_params=network_params,
                                 heterogeneous_susceptibilities=heterogeneous_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
@@ -265,8 +268,45 @@ def get_diagrams(cal_data_dir, data_dir, network_params, heterogeneous_susceptib
                                       h_bev=h_index,
                                       data_dir=data_dir)
         hev, phev, bev, none = get_mean_and_quantiles(folder_name)
-        hevs.append(hev[-1])
-        phevs.append(phev[-1])
-        bevs.append(bev[-1])
-        nones.append(none[-1])
+        hevs.append(hev[0][-1])
+        phevs.append(phev[0][-1])
+        bevs.append(bev[0][-1])
+        nones.append(none[0][-1])
     return hevs, phevs, bevs, nones, h_values[:, 1]
+
+
+def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
+    model_name = get_model_name(network_params=network_params,
+                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_driving_patterns=heterogeneous_driving_patterns)
+    alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
+    folder_name = cal_data_dir + "/" + model_name + f"_{alpha_phev}aphev_{alpha_bev}abev_0_0_0"
+    result = get_mean_and_quantiles(folder_name)
+
+    adoption_target = [0.489, 0.319, 0.192]
+    for i in range(len(adoption_target)):
+        plt.plot([0, len(result[0][0]) - 1], [adoption_target[i]] * 2)
+
+    plt.gca().set_prop_cycle(None)  # reset color cycle
+
+    labels = ["HEV", "PHEV", "BEV", "NONE"]
+    for i in range(4):
+        plt.fill_between(range(len(result[i][1])), result[i][1], result[i][2], alpha=0.2)
+        plt.errorbar(range(len(result[i][0])), result[i][0], yerr=result[i][3], fmt=':.', label=labels[i])
+        # plt.plot(result[i][0], '--.')
+
+    title_string = f"{model_name} aphev={alpha_phev:.0f} abev={alpha_bev:.1f}"
+    plt.title(title_string)
+    plt.xlabel("MCS")
+    plt.ylabel("Adoption level")
+    plt.xlim([0, len(result[0][0]) - 1])
+    plt.ylim([0, 1])
+    plt.legend(loc="upper right")
+    #plt.legend(["HEV", "PHEV", "BEV", "NONE"])
+
+    result_folder_name = cal_data_dir + f"/calibration_plots"
+    if not os.path.exists(result_folder_name):
+        os.mkdir(result_folder_name)
+
+    plt.savefig(result_folder_name + "/" + title_string + ".png")
+    plt.clf()

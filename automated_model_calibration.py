@@ -2,7 +2,8 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-from afv_module import run_automated_calibration, run_diagram_simulations, get_mean_and_quantiles, get_diagrams
+from afv_module import run_automated_calibration, run_diagram_simulations, get_mean_and_quantiles, get_diagrams, \
+    get_calibration
 
 if __name__ == '__main__':
 
@@ -20,36 +21,37 @@ if __name__ == '__main__':
                 ("WS", 1024, 4, 1),
                 ("WS", 1024, 4, 0)]
 
-    result = get_mean_and_quantiles(
-        r"D:\Data\alternative-fuel-vehicle-abm-data\SL_32L_0hs_0hdp\SL_32L_0hs_0hdp_9.0aphev_0.6000000000000001abev_0_0_18")
-    plt.plot(result[0], '--.')
-    plt.plot(result[1], '--.')
-    plt.plot(result[2], '--.')
-    print(result[0])
+    get_calibration(cal_data_dir, networks[0], 0, 1)
 
-    plt.figure()
-    for heterogeneous_susceptibilities in [0, 1]:
-        for heterogeneous_driving_patterns in [0, 1]:
-            hevs, phevs, bevs, nones, h_values = get_diagrams(cal_data_dir, data_dir, networks[0], heterogeneous_susceptibilities, heterogeneous_driving_patterns)
-            print(hevs, phevs, bevs, nones, h_values)
+    # print(result[0][0])
 
-            plt.plot(h_values, hevs, '--.')
-            plt.plot(h_values, phevs, '--.')
-            plt.plot(h_values, bevs, '--.')
-            plt.plot(h_values, nones, '--.')
-    plt.show()
-    # for network_params in networks:
-    #     for heterogeneous_susceptibilities in [0, 1]:
-    #         for heterogeneous_driving_patterns in [0, 1]:
-    #             # run_automated_calibration(data_dir=cal_data_dir,
-    #             #                           alpha_phevs=alpha_phevs,
-    #             #                           alpha_bevs=alpha_bevs,
-    #             #                           network_params=network_params,
-    #             #                           heterogeneous_susceptibilities=heterogeneous_susceptibilities,
-    #             #                           heterogeneous_driving_patterns=heterogeneous_driving_patterns)
+    # plt.figure()
+    # for heterogeneous_susceptibilities in [0, 1]:
+    #     for heterogeneous_driving_patterns in [0, 1]:
+    #         hevs, phevs, bevs, nones, h_values = get_diagrams(cal_data_dir, data_dir, networks[0], heterogeneous_susceptibilities, heterogeneous_driving_patterns)
+    #         print(hevs, phevs, bevs, nones, h_values)
+    #
+    #         plt.plot(h_values, hevs, '--.')
+    #         plt.plot(h_values, phevs, '--.')
+    #         plt.plot(h_values, bevs, '--.')
+    #         plt.plot(h_values, nones, '--.')
+    #plt.show()
+    for network_params in networks:
+        for heterogeneous_susceptibilities in [0, 1]:
+            for heterogeneous_driving_patterns in [0, 1]:
+                get_calibration(cal_data_dir=cal_data_dir,
+                                network_params=network_params,
+                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_driving_patterns=heterogeneous_driving_patterns)
+
+    #             run_automated_calibration(data_dir=cal_data_dir,
+    #                                       alpha_phevs=alpha_phevs,
+    #                                       alpha_bevs=alpha_bevs,
+    #                                       network_params=network_params,
+    #                                       heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+    #                                       heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     #             run_diagram_simulations(cal_data_dir=cal_data_dir,
     #                                     data_dir=data_dir,
     #                                     network_params=network_params,
     #                                     heterogeneous_susceptibilities=heterogeneous_susceptibilities,
     #                                     heterogeneous_driving_patterns=heterogeneous_driving_patterns)
-
