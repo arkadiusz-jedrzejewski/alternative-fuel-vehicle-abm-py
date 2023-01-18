@@ -22,10 +22,12 @@ if __name__ == '__main__':
                 ("WS", 1024, 4, 0)]
 
     #get_calibration(cal_data_dir, networks[0], 0, 1)
-    get_diagram(cal_data_dir=cal_data_dir,
-                data_dir=data_dir,
-                network_params=networks[0],
-                h_type="h_phev")
+    for network_params in networks:
+        for h_type in ["h_hev", "h_phev", "h_bev"]:
+            get_diagram(cal_data_dir=cal_data_dir,
+                        data_dir=data_dir,
+                        network_params=network_params,
+                        h_type=h_type)
 
     # print(result[0][0])
 

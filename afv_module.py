@@ -334,6 +334,7 @@ def get_diagram(cal_data_dir, data_dir, network_params, h_type):
     title_string = ""
     mark_it = 0
     marks = ["d", ".", "^", "x"]
+    car_type = ["HEV", "PHEV", "BEV"]
     fig, ax = plt.subplots(1, 3, figsize=(10, 6))
     for heterogeneous_susceptibilities in [0, 1]:
         for heterogeneous_driving_patterns in [0, 1]:
@@ -352,6 +353,7 @@ def get_diagram(cal_data_dir, data_dir, network_params, h_type):
                                label=f"{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp")
                 ax[i].set_ylim([0, 1])
                 ax[i].set_xlabel(h_type)
+                ax[i].set_title(car_type[i])
                 ax[i].set_ylabel("Adoption level")
             mark_it += 1
     plt.suptitle(title_string)
@@ -363,4 +365,4 @@ def get_diagram(cal_data_dir, data_dir, network_params, h_type):
         os.mkdir(plot_folder_name)
 
     plt.savefig(plot_folder_name + "/" + network_name + f"_{h_type}" + ".png")
-    plt.show()
+    #plt.show()
