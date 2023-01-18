@@ -12,10 +12,10 @@ def get_mean_and_quantiles(data):
 
 def get_trajectory(number):
     traj = {
-        'hev': np.zeros([ave_num, 51]),
-        'phev': np.zeros([ave_num, 51]),
-        'bev': np.zeros([ave_num, 51]),
-        'none': np.zeros([ave_num, 51])
+        'hev': np.zeros([ave_num, 21]),
+        'phev': np.zeros([ave_num, 21]),
+        'bev': np.zeros([ave_num, 21]),
+        'none': np.zeros([ave_num, 21])
     }
 
     for i in range(ave_num):
@@ -27,15 +27,40 @@ def get_trajectory(number):
     return traj
 
 
-#folder_name = 'SL_50L_0hs_0hdp_8aphev_0.6abev_0_0_0'
-folder_name = 'SL_50L_0hs_0hdp_7aphev_0.6abev_0_0_0'
+data_dir = r"D:\Data\alternative-fuel-vehicle-abm-data"
 
-#folder_name = 'SL_50L_1hs_1hdp_15aphev_4.5abev_0_0_0'
+network_type = "WS"
+heterogeneous_susceptibilities = 0
+heterogeneous_driving_patterns = 0
+h_hev, h_phev, h_bev = 0, 0, 0
 
+if network_type == "SL":
+    L = 32  # linear system size (N = L x L: number of agents)
+    network_parameters = (L,)
+    model_name = f"{network_type}_{L}L_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
+    best_parms = np.loadtxt(f"{data_dir}/map_results/{model_name}_best_parms.csv")
+    alpha_phev, alpha_bev, mse = best_parms[0], best_parms[1],  best_parms[2]
+    print(alpha_phev, alpha_bev, mse)
+    print(best_parms)
+    folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
+elif network_type == "WS":
+    N = 1024  # number of agents
+    k = 4  # average node degree (must be divisible by 2)
+    beta = 1  # rewiring probability
+    network_parameters = (N, k, beta)
+    model_name = f"{network_type}_{N}N_{k}k_{beta}beta_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
+    best_parms = np.loadtxt(f"{data_dir}/map_results/{model_name}_best_parms.csv")
+    alpha_phev, alpha_bev, mse = best_parms[0], best_parms[1], best_parms[2]
+    print(alpha_phev, alpha_bev, mse)
+    print(best_parms)
+
+    folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
 
 ave_num = int(np.loadtxt(folder_name + '\\num_ave.csv'))
 
-t_mcs = range(51)
+print(ave_num)
+
+t_mcs = range(21)
 traj = get_trajectory(0)
 
 means = {
@@ -72,4 +97,8 @@ ax.legend(handles, ['hev', 'phev', 'bev', 'none'])
 print(means)
 print(sems)
 
+plt.title(model_name)
+plt.xlabel("MCS")
+plt.ylabel("adoption")
+#plt.savefig(f'{folder_name}/{folder_name}.png')
 plt.show()

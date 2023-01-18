@@ -5,7 +5,7 @@ import multiprocessing as mp
 from functools import partial
 
 
-def create_file(num_ave,
+def create_file(sim_num,
                 network_type,
                 network_parameters,
                 heterogeneous_susceptibilities,
@@ -17,7 +17,7 @@ def create_file(num_ave,
                 h_bev,
                 time_horizon,
                 folder_name):
-    file_name = folder_name + f"/sim-{num_ave}.txt"
+    file_name = folder_name + f"/sim-{sim_num}.txt"
     if network_type == "SL":
         (L,) = network_parameters
         subprocess.run(
@@ -36,8 +36,8 @@ if __name__ == '__main__':
     heterogeneous_susceptibilities = 0
     heterogeneous_driving_patterns = 0
 
-    alpha_phev = 7  #15  #
-    alpha_bev = 0.6  #4.5  #
+    alpha_phev = 12  #15  #
+    alpha_bev = 0.4  #4.5  #
 
     h_hev = 0
     h_phev = 0
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     time_horizon = 50
 
     num_ave = 100
-    ave_tab = np.arange(num_ave)
+    sim_numbers = np.arange(num_ave)
 
     if network_type == "SL":
         L = 50  # linear system size (N = L x L: number of agents)
@@ -77,4 +77,4 @@ if __name__ == '__main__':
                          h_bev=h_bev,
                          time_horizon=time_horizon,
                          folder_name=folder_name),
-                 ave_tab)
+                 sim_numbers)
