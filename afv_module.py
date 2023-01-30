@@ -293,6 +293,24 @@ def get_diagram_data(cal_data_dir, data_dir, network_params, heterogeneous_susce
     return h_values[:, 1], hevs, sem_hevs, phevs, sem_phevs, bevs, sem_bevs, nones, sem_nones
 
 
+def get_calibration_map(cal_data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
+    model_name = get_model_name(network_name=get_network_name(network_params),
+                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_driving_patterns=heterogeneous_driving_patterns)
+    folder_name = cal_data_dir + "/map_results"
+    errors = np.loadtxt(folder_name + f"/{model_name}_mses.csv", delimiter=",")
+    alpha_phevs_m = np.loadtxt(folder_name + f"/{model_name}_alpha_phevs_m.csv", delimiter=",")
+    alpha_bevs_m = np.loadtxt(folder_name + f"/{model_name}_alpha_bevs_m.csv", delimiter=",")
+
+    # best_parms = (best_parms[0], best_parms[1], error_dict[best_parms])
+    best_parms = np.loadtxt(folder_name + f"/{model_name}_best_parms.csv", delimiter=",")
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.plot_surface(alpha_phevs_m, alpha_bevs_m, errors, rstride=1, cstride=1,
+                    cmap='viridis', edgecolor='none')
+    print(best_parms)
+
+
 def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
     model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_susceptibilities=heterogeneous_susceptibilities,
@@ -365,4 +383,4 @@ def get_diagram(cal_data_dir, data_dir, network_params, h_type):
         os.mkdir(plot_folder_name)
 
     plt.savefig(plot_folder_name + "/" + network_name + f"_{h_type}" + ".png")
-    #plt.show()
+    # plt.show()
