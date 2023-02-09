@@ -303,12 +303,19 @@ def get_calibration_map(cal_data_dir, network_params, heterogeneous_susceptibili
     alpha_bevs_m = np.loadtxt(folder_name + f"/{model_name}_alpha_bevs_m.csv", delimiter=",")
 
     # best_parms = (best_parms[0], best_parms[1], error_dict[best_parms])
-    best_parms = np.loadtxt(folder_name + f"/{model_name}_best_parms.csv", delimiter=",")
+    alpha_phev, alpha_bev, mse = np.loadtxt(folder_name + f"/{model_name}_best_parms.csv")
     fig = plt.figure()
     ax = plt.axes(projection='3d')
     ax.plot_surface(alpha_phevs_m, alpha_bevs_m, errors, rstride=1, cstride=1,
-                    cmap='viridis', edgecolor='none')
-    print(best_parms)
+                    cmap='viridis', edgecolor='none', alpha=0.9)
+    ax.scatter(alpha_phev, alpha_bev, mse, c='r')
+    ax.set_xlabel("alpha_phev")
+    ax.set_ylabel("alpha_bev")
+    ax.set_zlabel("MSE")
+    plt.title(f"{model_name} aphev={alpha_phev:.0f} abev={alpha_bev:.1f} MSE={mse:.5f}")
+
+    title_string = f"{model_name} aphev={alpha_phev:.0f} abev={alpha_bev:.1f}"
+    plt.savefig(folder_name + "/" + title_string + ".png")
 
 
 def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):

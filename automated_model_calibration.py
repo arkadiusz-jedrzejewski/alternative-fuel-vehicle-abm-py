@@ -7,11 +7,11 @@ from afv_module import run_automated_calibration, run_diagram_simulations, get_m
 
 if __name__ == '__main__':
 
-    cal_data_dir = r"D:\Data\alternative-fuel-vehicle-abm-cal-data-3"
+    cal_data_dir = r"D:\Data\alternative-fuel-vehicle-abm-cal-data-2"
     if not os.path.exists(cal_data_dir):
         os.mkdir(cal_data_dir)
 
-    data_dir = r"D:\Data\alternative-fuel-vehicle-abm-data-3"
+    data_dir = r"D:\Data\alternative-fuel-vehicle-abm-data-2"
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
 
@@ -21,8 +21,8 @@ if __name__ == '__main__':
                 ("WS", 1024, 4, 1),
                 ("WS", 1024, 4, 0)]
 
-    get_calibration_map(cal_data_dir, networks[0], 0, 1)
-    plt.show()
+    #get_calibration_map(cal_data_dir, networks[0], 0, 1)
+    #plt.show()
     #get_calibration(cal_data_dir, networks[0], 0, 1)
     # for network_params in networks:
     #     for h_type in ["h_hev", "h_phev", "h_bev"]:
@@ -60,9 +60,13 @@ if __name__ == '__main__':
             #plt.plot(h_values, nones, '--.')
     # plt.legend(loc="upper right")
     # plt.show()
-    # for network_params in networks:
-    #     for heterogeneous_susceptibilities in [0, 1]:
-    #         for heterogeneous_driving_patterns in [0, 1]:
+    for network_params in networks:
+        for heterogeneous_susceptibilities in [0, 1]:
+            for heterogeneous_driving_patterns in [0, 1]:
+                get_calibration_map(cal_data_dir,
+                                    network_params=network_params,
+                                    heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                    heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     #             get_calibration(cal_data_dir=cal_data_dir,
     #                             network_params=network_params,
     #                             heterogeneous_susceptibilities=heterogeneous_susceptibilities,
