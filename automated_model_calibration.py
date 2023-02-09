@@ -3,7 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from afv_module import run_automated_calibration, run_diagram_simulations, get_mean_and_quantiles, get_diagram_data, \
-    get_calibration, get_diagram
+    get_calibration, get_diagram, get_calibration_map
 
 if __name__ == '__main__':
 
@@ -21,13 +21,15 @@ if __name__ == '__main__':
                 ("WS", 1024, 4, 1),
                 ("WS", 1024, 4, 0)]
 
+    get_calibration_map(cal_data_dir, networks[0], 0, 1)
+    plt.show()
     #get_calibration(cal_data_dir, networks[0], 0, 1)
-    for network_params in networks:
-        for h_type in ["h_hev", "h_phev", "h_bev"]:
-            get_diagram(cal_data_dir=cal_data_dir,
-                        data_dir=data_dir,
-                        network_params=network_params,
-                        h_type=h_type)
+    # for network_params in networks:
+    #     for h_type in ["h_hev", "h_phev", "h_bev"]:
+    #         get_diagram(cal_data_dir=cal_data_dir,
+    #                     data_dir=data_dir,
+    #                     network_params=network_params,
+    #                     h_type=h_type)
 
     # print(result[0][0])
 
