@@ -8,7 +8,9 @@ from functools import partial
 def create_file(num_ave,
                 network_type,
                 network_parameters,
-                heterogeneous_susceptibilities,
+                heterogeneous_hev_susceptibilities,
+                heterogeneous_phev_susceptibilities,
+                heterogeneous_bev_susceptibilities,
                 heterogeneous_driving_patterns,
                 alpha_phev,
                 alpha_bev,
@@ -33,11 +35,11 @@ def create_file(num_ave,
     if network_type == "SL":
         (L,) = network_parameters
         subprocess.run(
-            f"alternative_fuel_vehicle_abm.exe {network_type} {heterogeneous_susceptibilities} {heterogeneous_driving_patterns} {alpha_phev} {alpha_bev} {h_hev} {h_phev} {h_bev} {time_horizon} {file_name} {L}")
+            f"alternative_fuel_vehicle_abm.exe {network_type} {heterogeneous_hev_susceptibilities} {heterogeneous_phev_susceptibilities} {heterogeneous_bev_susceptibilities} {heterogeneous_driving_patterns} {alpha_phev} {alpha_bev} {h_hev} {h_phev} {h_bev} {time_horizon} {file_name} {L}")
     elif network_type == "WS":
         (N, k, beta) = network_parameters
         subprocess.run(
-            f"alternative_fuel_vehicle_abm.exe {network_type} {heterogeneous_susceptibilities} {heterogeneous_driving_patterns} {alpha_phev} {alpha_bev} {h_hev} {h_phev} {h_bev} {time_horizon} {file_name} {N} {k} {beta}")
+            f"alternative_fuel_vehicle_abm.exe {network_type} {heterogeneous_hev_susceptibilities} {heterogeneous_phev_susceptibilities} {heterogeneous_bev_susceptibilities} {heterogeneous_driving_patterns} {alpha_phev} {alpha_bev} {h_hev} {h_phev} {h_bev} {time_horizon} {file_name} {N} {k} {beta}")
         return 0
 
 
@@ -45,7 +47,9 @@ if __name__ == '__main__':
 
     network_type = "WS"  # "SL" - square lattice, "WS" Watts Strogatz network
 
-    heterogeneous_susceptibilities = 1
+    heterogeneous_hev_susceptibilities = 1
+    heterogeneous_phev_susceptibilities = 1
+    heterogeneous_bev_susceptibilities = 1
     heterogeneous_driving_patterns = 1
 
     alpha_phev = 8
@@ -61,13 +65,13 @@ if __name__ == '__main__':
     if network_type == "SL":
         L = 50  # linear system size (N = L x L: number of agents)
         network_parameters = (L,)
-        folder_name = f'{network_type}_{L}L_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp_{alpha_phev}aphev_{alpha_bev}abev_{advertised_type}'
+        folder_name = f'{network_type}_{L}L_{heterogeneous_hev_susceptibilities}_{heterogeneous_phev_susceptibilities}_{heterogeneous_bev_susceptibilities}hs_{heterogeneous_driving_patterns}hdp_{alpha_phev}aphev_{alpha_bev}abev_{advertised_type}'
     elif network_type == "WS":
         N = 2500  # number of agents
         k = 4  # average node degree (must be divisible by 2)
         beta = 1  # rewiring probability
         network_parameters = (N, k, beta)
-        folder_name = f'{network_type}_{N}N_{k}k_{beta}beta_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp_{alpha_phev}aphev_{alpha_bev}abev_{advertised_type}'
+        folder_name = f'{network_type}_{N}N_{k}k_{beta}beta_{heterogeneous_hev_susceptibilities}_{heterogeneous_phev_susceptibilities}_{heterogeneous_bev_susceptibilities}hs_{heterogeneous_driving_patterns}hdp_{alpha_phev}aphev_{alpha_bev}abev_{advertised_type}'
 
     num_h = 20
     h_start = 0
@@ -93,7 +97,9 @@ if __name__ == '__main__':
             pool.map(partial(create_file,
                              network_type=network_type,
                              network_parameters=network_parameters,
-                             heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                             heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                             heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                             heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                              heterogeneous_driving_patterns=heterogeneous_driving_patterns,
                              alpha_phev=alpha_phev,
                              alpha_bev=alpha_bev,

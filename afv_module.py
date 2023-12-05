@@ -6,11 +6,14 @@ from functools import partial
 import time
 import datetime
 import matplotlib.pyplot as plt
+import tikzplotlib
 
 
 def create_file(sim_num,
                 network_params,
-                heterogeneous_susceptibilities,
+                heterogeneous_hev_susceptibilities,
+                heterogeneous_phev_susceptibilities,
+                heterogeneous_bev_susceptibilities,
                 heterogeneous_driving_patterns,
                 alpha_phev,
                 alpha_bev,
@@ -24,11 +27,11 @@ def create_file(sim_num,
     if network_type == "SL":
         (_, L) = network_params
         subprocess.run(
-            f"alternative_fuel_vehicle_abm.exe {network_type} {heterogeneous_susceptibilities} {heterogeneous_driving_patterns} {alpha_phev} {alpha_bev} {h_hev} {h_phev} {h_bev} {time_horizon} {file_name} {L}")
+            f"alternative_fuel_vehicle_abm.exe {network_type} {heterogeneous_hev_susceptibilities} {heterogeneous_phev_susceptibilities} {heterogeneous_bev_susceptibilities} {heterogeneous_driving_patterns} {alpha_phev} {alpha_bev} {h_hev} {h_phev} {h_bev} {time_horizon} {file_name} {L}")
     elif network_type == "WS":
         (_, N, k, beta) = network_params
         subprocess.run(
-            f"alternative_fuel_vehicle_abm.exe {network_type} {heterogeneous_susceptibilities} {heterogeneous_driving_patterns} {alpha_phev} {alpha_bev} {h_hev} {h_phev} {h_bev} {time_horizon} {file_name} {N} {k} {beta}")
+            f"alternative_fuel_vehicle_abm.exe {network_type} {heterogeneous_hev_susceptibilities} {heterogeneous_phev_susceptibilities} {heterogeneous_bev_susceptibilities} {heterogeneous_driving_patterns} {alpha_phev} {alpha_bev} {h_hev} {h_phev} {h_bev} {time_horizon} {file_name} {N} {k} {beta}")
         return 0
 
 
@@ -47,8 +50,9 @@ def get_network_name(network_params):
     return network_name
 
 
-def get_model_name(network_name, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
-    return f"{network_name}_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
+def get_model_name(network_name, heterogeneous_hev_susceptibilities, heterogeneous_phev_susceptibilities,
+                   heterogeneous_bev_susceptibilities, heterogeneous_driving_patterns):
+    return f"{network_name}_{heterogeneous_hev_susceptibilities}_{heterogeneous_phev_susceptibilities}_{heterogeneous_bev_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
 
 
 def get_folder_name(model_name, alpha_phev, alpha_bev, hs, data_dir):
@@ -57,14 +61,17 @@ def get_folder_name(model_name, alpha_phev, alpha_bev, hs, data_dir):
     return folder_name
 
 
-def run_single_simulation(network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns,
+def run_single_simulation(network_params, heterogeneous_hev_susceptibilities, heterogeneous_phev_susceptibilities,
+                          heterogeneous_bev_susceptibilities, heterogeneous_driving_patterns,
                           alpha_phev,
                           alpha_bev, h_hev, h_phev, h_bev, num_ave, time_horizon, folder_name):
     if not os.path.exists(folder_name):
         os.mkdir(folder_name)
 
     np.savetxt(folder_name + '/num_ave.csv', [num_ave], fmt="%i")
-    np.savetxt(folder_name + '/model_params.csv', np.column_stack([heterogeneous_susceptibilities,
+    np.savetxt(folder_name + '/model_params.csv', np.column_stack([heterogeneous_hev_susceptibilities,
+                                                                   heterogeneous_phev_susceptibilities,
+                                                                   heterogeneous_bev_susceptibilities,
                                                                    heterogeneous_driving_patterns,
                                                                    alpha_phev,
                                                                    alpha_bev,
@@ -72,13 +79,15 @@ def run_single_simulation(network_params, heterogeneous_susceptibilities, hetero
                                                                    h_phev,
                                                                    h_bev,
                                                                    time_horizon]),
-               fmt=("%i,%i," + "%.18f," * 5 + "%i"))
+               fmt=("%i," * 4 + "%.18f," * 5 + "%i"))
 
     sim_numbers = np.arange(num_ave)
     with mp.Pool(6) as pool:
         pool.map(partial(create_file,
                          network_params=network_params,
-                         heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                         heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                         heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                         heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                          heterogeneous_driving_patterns=heterogeneous_driving_patterns,
                          alpha_phev=alpha_phev,
                          alpha_bev=alpha_bev,
@@ -90,7 +99,8 @@ def run_single_simulation(network_params, heterogeneous_susceptibilities, hetero
                  sim_numbers)
 
 
-def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params, heterogeneous_susceptibilities,
+def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params, heterogeneous_hev_susceptibilities,
+                              heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
                               heterogeneous_driving_patterns):
     adoption_target = [0.489, 0.319, 0.192]
 
@@ -99,7 +109,9 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
     parm_space = [(alpha_phev, alpha_bev) for alpha_phev in alpha_phevs for alpha_bev in alpha_bevs]
 
     model_name = get_model_name(network_name=get_network_name(network_params),
-                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                                heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                                heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
 
     start = time.time()
@@ -113,7 +125,9 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
                                       hs=(0, 0, 0),
                                       data_dir=data_dir)
         run_single_simulation(network_params=network_params,
-                              heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                              heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                              heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                              heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                               heterogeneous_driving_patterns=heterogeneous_driving_patterns,
                               alpha_phev=alpha_phev,
                               alpha_bev=alpha_bev,
@@ -160,15 +174,18 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
     np.savetxt(folder_name + f"/{model_name}_best_parms.csv", best_parms, fmt="%.18f", delimiter=",")
 
 
-def run_diagram_simulations(cal_data_dir, data_dir, network_params, heterogeneous_susceptibilities,
+def run_diagram_simulations(cal_data_dir, data_dir, network_params, heterogeneous_hev_susceptibilities,
+                            heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
                             heterogeneous_driving_patterns):
     model_name = get_model_name(network_name=get_network_name(network_params),
-                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                                heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                                heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
 
     print(
-        f"{network_params} {heterogeneous_susceptibilities}hs{heterogeneous_driving_patterns}hdp:\ta_phev={alpha_phev}\ta_bev={alpha_bev}\tMSE={mse}")
+        f"{network_params} {heterogeneous_hev_susceptibilities}_{heterogeneous_phev_susceptibilities}_{heterogeneous_bev_susceptibilities}hs_{heterogeneous_driving_patterns}hdp:\ta_phev={alpha_phev}\ta_bev={alpha_bev}\tMSE={mse}")
 
     num_h = 20
     h_start = 0
@@ -195,7 +212,9 @@ def run_diagram_simulations(cal_data_dir, data_dir, network_params, heterogeneou
                                       data_dir=data_dir)
 
         run_single_simulation(network_params=network_params,
-                              heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                              heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                              heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                              heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                               heterogeneous_driving_patterns=heterogeneous_driving_patterns,
                               alpha_phev=alpha_phev,
                               alpha_bev=alpha_bev,
@@ -234,7 +253,7 @@ def calculate_mean_and_quantiles(data):
     q95 = np.quantile(data, q=0.95, axis=0)
     q05 = np.quantile(data, q=0.05, axis=0)
     mean = np.mean(data, axis=0)
-    sem = np.std(data, axis=0, ddof=1) / np.sqrt(np.size(data, axis=0))  # standard error of the mean
+    sem = np.std(data, axis=0, ddof=1) / np.sqrt(np.size(data, axis=0)) # standard error of the mean
     return mean, q05, q95, sem
 
 
@@ -248,10 +267,13 @@ def get_mean_and_quantiles(folder_name):
     return result
 
 
-def get_diagram_data(cal_data_dir, data_dir, network_params, heterogeneous_susceptibilities,
+def get_diagram_data(cal_data_dir, data_dir, network_params, heterogeneous_hev_susceptibilities,
+                     heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
                      heterogeneous_driving_patterns, h_type):
     model_name = get_model_name(network_name=get_network_name(network_params),
-                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                                heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                                heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
     data_dir_path = data_dir + "/" + model_name
@@ -293,9 +315,13 @@ def get_diagram_data(cal_data_dir, data_dir, network_params, heterogeneous_susce
     return h_values[:, 1], hevs, sem_hevs, phevs, sem_phevs, bevs, sem_bevs, nones, sem_nones
 
 
-def get_calibration_map(cal_data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
+def get_calibration_map(cal_data_dir, network_params, heterogeneous_hev_susceptibilities,
+                        heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
+                        heterogeneous_driving_patterns):
     model_name = get_model_name(network_name=get_network_name(network_params),
-                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                                heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                                heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     folder_name = cal_data_dir + "/map_results"
     errors = np.loadtxt(folder_name + f"/{model_name}_mses.csv", delimiter=",")
@@ -305,22 +331,28 @@ def get_calibration_map(cal_data_dir, network_params, heterogeneous_susceptibili
     # best_parms = (best_parms[0], best_parms[1], error_dict[best_parms])
     alpha_phev, alpha_bev, mse = np.loadtxt(folder_name + f"/{model_name}_best_parms.csv")
     fig = plt.figure()
-    ax = plt.axes(projection='3d')
+    # ax = plt.axes(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     ax.plot_surface(alpha_phevs_m, alpha_bevs_m, errors, rstride=1, cstride=1,
                     cmap='viridis', edgecolor='none', alpha=0.9)
     ax.scatter(alpha_phev, alpha_bev, mse, c='r')
-    ax.set_xlabel("alpha_phev")
-    ax.set_ylabel("alpha_bev")
+    ax.set_xlabel(r'alpha_PHEV$')
+    ax.set_ylabel(r'$alpha_BEV$')
     ax.set_zlabel("MSE")
     plt.title(f"{model_name} aphev={alpha_phev:.0f} abev={alpha_bev:.1f} MSE={mse:.5f}")
 
     title_string = f"{model_name} aphev={alpha_phev:.0f} abev={alpha_bev:.1f}"
     plt.savefig(folder_name + "/" + title_string + ".png")
+    tikzplotlib.save(folder_name + "/" + title_string + ".tex")
 
 
-def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities, heterogeneous_driving_patterns):
+def get_calibration(cal_data_dir, network_params, heterogeneous_hev_susceptibilities,
+                    heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
+                    heterogeneous_driving_patterns):
     model_name = get_model_name(network_name=get_network_name(network_params),
-                                heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                                heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                                heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
     folder_name = cal_data_dir + "/" + model_name + f"_{alpha_phev}aphev_{alpha_bev}abev_0_0_0"
@@ -335,7 +367,8 @@ def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities
     labels = ["HEV", "PHEV", "BEV", "NONE"]
     for i in range(4):
         plt.fill_between(range(len(result[i][1])), result[i][1], result[i][2], alpha=0.2)
-        plt.errorbar(range(len(result[i][0])), result[i][0], yerr=result[i][3], fmt=':.', label=labels[i])
+        # plt.plot(range(len(result[i][0])), result[i][0],':.')
+        plt.errorbar(range(len(result[i][0])), result[i][0], yerr=result[i][3], label=labels[i])
 
     title_string = f"{model_name} aphev={alpha_phev:.0f} abev={alpha_bev:.1f}"
     plt.title(title_string)
@@ -343,14 +376,56 @@ def get_calibration(cal_data_dir, network_params, heterogeneous_susceptibilities
     plt.ylabel("Adoption level")
     plt.xlim([0, len(result[0][0]) - 1])
     plt.ylim([0, 1])
-    plt.legend(loc="upper right")
+    # plt.legend(loc="upper right")
 
     result_folder_name = cal_data_dir + f"/calibration_plots"
     if not os.path.exists(result_folder_name):
         os.mkdir(result_folder_name)
 
     plt.savefig(result_folder_name + "/" + title_string + ".png")
+    tikzplotlib.save(result_folder_name + "/" + title_string + ".tex")
     plt.clf()
+
+
+def get_calibration_ax(ax, cal_data_dir, network_params, heterogeneous_hev_susceptibilities,
+                       heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
+                       heterogeneous_driving_patterns):
+    model_name = get_model_name(network_name=get_network_name(network_params),
+                                heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                                heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                                heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
+                                heterogeneous_driving_patterns=heterogeneous_driving_patterns)
+    alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
+    folder_name = cal_data_dir + "/" + model_name + f"_{alpha_phev}aphev_{alpha_bev}abev_0_0_0"
+    result = get_mean_and_quantiles(folder_name)
+
+    adoption_target = [0.489, 0.319, 0.192]
+    for i in range(len(adoption_target)):
+        ax.plot([0, len(result[0][0]) - 1], [adoption_target[i]] * 2)
+
+    ax.set_prop_cycle(None)  # reset color cycle
+
+    labels = ["HEV", "PHEV", "BEV", "NONE"]
+    for i in range(4):
+        ax.fill_between(range(len(result[i][1])), result[i][1], result[i][2], alpha=0.2)
+        ax.errorbar(range(len(result[i][0])), result[i][0], yerr=result[i][3], fmt='.')
+        # ax.plot(range(len(result[i][0])), result[i][0], '.')
+
+    # title_string = f"{model_name} aphev={alpha_phev:.0f} abev={alpha_bev:.1f}"
+    # ax.set_title(title_string)
+    ax.set_xlabel("MCS")
+    ax.set_ylabel("Adoption level")
+    ax.set_xlim([0, len(result[0][0]) - 1])
+    ax.set_ylim([0, 1])
+    # plt.legend(loc="upper right")
+
+    result_folder_name = cal_data_dir + f"/calibration_plots"
+    # if not os.path.exists(result_folder_name):
+    #     os.mkdir(result_folder_name)
+    return result_folder_name + "/" + get_network_name(network_params) + ".tex"
+    # plt.savefig(result_folder_name + "/" + title_string + ".png")
+    # tikzplotlib.save(result_folder_name + "/" + title_string + ".tex")
+    # plt.clf()
 
 
 def get_diagram(cal_data_dir, data_dir, network_params, h_type):
@@ -361,33 +436,51 @@ def get_diagram(cal_data_dir, data_dir, network_params, h_type):
     marks = ["d", ".", "^", "x"]
     car_type = ["HEV", "PHEV", "BEV"]
     fig, ax = plt.subplots(1, 3, figsize=(10, 6))
-    for heterogeneous_susceptibilities in [0, 1]:
+    for heterogeneous_hev_susceptibilities in [0, 1]:
+        heterogeneous_phev_susceptibilities = heterogeneous_hev_susceptibilities
+        heterogeneous_bev_susceptibilities = heterogeneous_hev_susceptibilities
+        # for heterogeneous_phev_susceptibilities in [0, 1]:
+        #     for heterogeneous_bev_susceptibilities in [0, 1]:
         for heterogeneous_driving_patterns in [0, 1]:
             model_name = get_model_name(network_name=network_name,
-                                        heterogeneous_susceptibilities=heterogeneous_susceptibilities,
+                                        heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
+                                        heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
+                                        heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                                         heterogeneous_driving_patterns=heterogeneous_driving_patterns)
             alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
             title_string += f"{model_name} aphev={alpha_phev:.0f} abev={alpha_bev:.1f} {h_type}\n"
             data = np.loadtxt(result_folder_name + "/" + model_name + "_" + h_type + ".csv", delimiter=',')
+            mark_t = 3
+            if h_type == "h_hev" and heterogeneous_hev_susceptibilities == 1:
+                mark_t = 0
+            elif h_type == "h_phev" and heterogeneous_phev_susceptibilities == 1:
+                mark_t = 0
+            elif h_type == "h_bev" and heterogeneous_bev_susceptibilities == 1:
+                mark_t = 0
             for i in range(3):
                 ax[i].errorbar(data[:, 0],
                                data[:, 1 + i * 2],
                                yerr=data[:, 2 + i * 2],
-                               fmt=":" + marks[mark_it],
+                               fmt=":" + marks[mark_t],
                                markersize=5,
-                               label=f"{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp")
+                               label=f"{heterogeneous_hev_susceptibilities}_{heterogeneous_phev_susceptibilities}_{heterogeneous_bev_susceptibilities}hs_{heterogeneous_driving_patterns}hdp")
+                # ax[i].plot(data[:, 0],
+                #            data[:, 1 + i * 2],
+                #            markersize=5)
                 ax[i].set_ylim([0, 1])
                 ax[i].set_xlabel(h_type)
-                ax[i].set_title(car_type[i])
+                # ax[i].set_title(car_type[i])
                 ax[i].set_ylabel("Adoption level")
-            mark_it += 1
-    plt.suptitle(title_string)
+                mark_it += 1
+    # plt.suptitle(title_string)
     plt.legend(loc="upper right")
     plt.tight_layout()
 
     plot_folder_name = data_dir + f"/diagram_plots"
     if not os.path.exists(plot_folder_name):
         os.mkdir(plot_folder_name)
-
-    plt.savefig(plot_folder_name + "/" + network_name + f"_{h_type}" + ".png")
-    # plt.show()
+    print(plot_folder_name + "/" + network_name + f"_{h_type}" + ".tex")
+    # tikzplotlib.save(plot_folder_name + "/" + network_name + f"_{h_type}" + ".tex", axis_height='\\figH',
+    #                  axis_width='\\figW')
+    # plt.savefig(plot_folder_name + "/" + network_name + f"_{h_type}" + ".png")
+    plt.show()
