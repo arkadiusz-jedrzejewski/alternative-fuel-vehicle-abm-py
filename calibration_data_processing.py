@@ -27,31 +27,54 @@ def get_trajectory(number):
     return traj
 
 
-data_dir = r"D:\Data\alternative-fuel-vehicle-abm-data"
+data_dir = r"D:\Data\alternative-fuel-vehicle-abm-hypcal-data-3"
 
 network_type = "WS"
-heterogeneous_susceptibilities = 0
-heterogeneous_driving_patterns = 0
-h_hev, h_phev, h_bev = 0, 0, 0
+heterogeneous_susceptibilities = 1
+heterogeneous_driving_patterns = 1
+#h_hev, h_phev, h_bev = 0, 0, 1
 
+# if network_type == "SL":
+#     L = 32  # linear system size (N = L x L: number of agents)
+#     network_parameters = (L,)
+#     model_name = f"{network_type}_{L}L_{heterogeneous_susceptibilities}_{heterogeneous_susceptibilities}_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
+#     best_parms = np.loadtxt(f"{data_dir}/map_results/{model_name}_best_parms.csv")
+#     alpha_phev, alpha_bev, mse = best_parms[0], best_parms[1],  best_parms[2]
+#     print(alpha_phev, alpha_bev, mse)
+#     print(best_parms)
+#     folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
+# elif network_type == "WS":
+#     N = 1024  # number of agents
+#     k = 4  # average node degree (must be divisible by 2)
+#     beta = 1  # rewiring probability
+#     network_parameters = (N, k, beta)
+#     model_name = f"{network_type}_{N}N_{k}k_{beta}beta_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
+#     best_parms = np.loadtxt(f"{data_dir}/map_results/{model_name}_best_parms.csv")
+#     alpha_phev, alpha_bev, mse = best_parms[0], best_parms[1], best_parms[2]
+#     print(alpha_phev, alpha_bev, mse)
+#     print(best_parms)
+#
+#     folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
 if network_type == "SL":
     L = 32  # linear system size (N = L x L: number of agents)
     network_parameters = (L,)
-    model_name = f"{network_type}_{L}L_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
-    best_parms = np.loadtxt(f"{data_dir}/map_results/{model_name}_best_parms.csv")
-    alpha_phev, alpha_bev, mse = best_parms[0], best_parms[1],  best_parms[2]
-    print(alpha_phev, alpha_bev, mse)
+    model_name = f"{network_type}_{L}L_{heterogeneous_susceptibilities}_{heterogeneous_susceptibilities}_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
+    best_parms = np.loadtxt(f"{data_dir}/{model_name}_best_parms.csv")
+    alpha_phev, alpha_bev, h_hev, h_phev, h_bev, mse = best_parms[0], best_parms[1],  best_parms[2], best_parms[3], best_parms[4], best_parms[5]
+    print(alpha_phev, alpha_bev, h_hev, h_phev, h_bev, mse)
     print(best_parms)
     folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
 elif network_type == "WS":
     N = 1024  # number of agents
     k = 4  # average node degree (must be divisible by 2)
-    beta = 1  # rewiring probability
+    beta = 0  # rewiring probability
     network_parameters = (N, k, beta)
-    model_name = f"{network_type}_{N}N_{k}k_{beta}beta_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
-    best_parms = np.loadtxt(f"{data_dir}/map_results/{model_name}_best_parms.csv")
+    model_name = f"{network_type}_{N}N_{k}k_{beta}beta_{heterogeneous_susceptibilities}_{heterogeneous_susceptibilities}_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
+    best_parms = np.loadtxt(f"{data_dir}/{model_name}_best_parms.csv")
     alpha_phev, alpha_bev, mse = best_parms[0], best_parms[1], best_parms[2]
-    print(alpha_phev, alpha_bev, mse)
+    alpha_phev, alpha_bev, h_hev, h_phev, h_bev, mse = best_parms[0], best_parms[1], best_parms[2], best_parms[3], \
+    best_parms[4], best_parms[5]
+    print(alpha_phev, alpha_bev, h_hev, h_phev, h_bev, mse)
     print(best_parms)
 
     folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
