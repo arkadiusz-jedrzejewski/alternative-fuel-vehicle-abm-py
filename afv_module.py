@@ -544,7 +544,7 @@ def get_diagram(cal_data_dir, data_dir, network_params, h_type):
                 ax[i].errorbar(data[:, 0],
                                data[:, 1 + i * 2],
                                yerr=data[:, 2 + i * 2],
-                               fmt=":d",
+                               fmt="d",
                                markersize=5,
                                label=f"{heterogeneous_hev_susceptibilities}_{heterogeneous_phev_susceptibilities}_{heterogeneous_bev_susceptibilities}hs_{heterogeneous_driving_patterns}hdp")
                 # ax[i].plot(data[:, 0],
@@ -559,17 +559,17 @@ def get_diagram(cal_data_dir, data_dir, network_params, h_type):
     ax[0].plot([0, 4], [0.489] * 2, 'black')
     ax[1].plot([0, 4], [0.319] * 2, 'black')
     ax[2].plot([0, 4], [0.192] * 2, 'black')
-    plt.legend(loc="upper right")
+    #plt.legend(loc="upper right")
     plt.tight_layout()
 
     plot_folder_name = data_dir + f"/diagram_plots"
     if not os.path.exists(plot_folder_name):
         os.mkdir(plot_folder_name)
     print(plot_folder_name + "/" + network_name + f"_{h_type}" + ".tex")
-    # tikzplotlib.save(plot_folder_name + "/" + network_name + f"_{h_type}" + ".tex", axis_height='\\figH',
-    #                  axis_width='\\figW')
-    plt.savefig(plot_folder_name + "/" + network_name + f"_{h_type}" + ".png")
-    plt.show()
+    tikzplotlib.save(plot_folder_name + "/" + network_name + f"_{h_type}" + ".tex", axis_height='\\figH',
+                     axis_width='\\figW')
+    #plt.savefig(plot_folder_name + "/" + network_name + f"_{h_type}" + ".png")
+    #plt.show()
 
 
 def objective_hyperopt(params, network_params, heterogeneous_hev_susceptibilities, heterogeneous_phev_susceptibilities,
