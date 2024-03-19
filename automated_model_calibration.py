@@ -15,7 +15,7 @@ if __name__ == '__main__':
     if not os.path.exists(cal_data_dir):
         os.mkdir(cal_data_dir)
 
-    # folder where data for the adoption rate diagrams is saved based on the grid search
+    # folder where data for the adoption rate diagrams is saved based on the grid search calibration
     data_dir = r"D:\Data\alternative-fuel-vehicle-abm-data-1"
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
@@ -34,6 +34,7 @@ if __name__ == '__main__':
                 ("WS", 1024, 4, 1),
                 ("WS", 1024, 4, 0)]
 
+    # run calibration based on the grid search
     # for network_params in networks:
     #     for heterogeneous_driving_patterns in [0, 1]:
     #         for heterogeneous_susceptibilities in [0, 1]:
@@ -50,6 +51,7 @@ if __name__ == '__main__':
     #                                 heterogeneous_susceptibilities, heterogeneous_susceptibilities,
     #                                 heterogeneous_driving_patterns)
 
+    # run simulations for the adoption rate diagrams based on the grid search calibration
     # for network_params in networks:
     #     for heterogeneous_susceptibilities in [0, 1]:
     #         for heterogeneous_driving_patterns in [0, 1]:
@@ -67,6 +69,7 @@ if __name__ == '__main__':
     if not os.path.exists(hypcal_data_dir):
         os.mkdir(hypcal_data_dir)
 
+    # run calibration based on the tree-structured Parzen estimator algorithm
     # for network_params in networks:
     #     for heterogeneous_driving_patterns in [0, 1]:
     #         for heterogeneous_susceptibilities in [0, 1]:
@@ -75,11 +78,13 @@ if __name__ == '__main__':
     #                                          heterogeneous_driving_patterns=heterogeneous_driving_patterns,
     #                                          heterogeneous_susceptibilities=heterogeneous_susceptibilities)
 
-    # folder where data for the adoption rate diagrams is saved based on the tree-structured Parzen estimator algorithm
+    # folder where data for the adoption rate diagrams is saved
+    # based on the tree-structured Parzen estimator algorithm calibration
     hypdata_dir = r"D:\Data\alternative-fuel-vehicle-abm-hyp-data-4"
     if not os.path.exists(hypdata_dir):
         os.mkdir(hypdata_dir)
 
+    # run simulations for the adoption rate diagrams based on the tree-structured Parzen estimator algorithm calibration
     # for network_params in networks:
     #     for heterogeneous_driving_patterns in [0, 1]:
     #         for heterogeneous_susceptibilities in [0, 1]:
