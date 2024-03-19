@@ -10,17 +10,26 @@ from hyperopt import tpe, hp, fmin, Trials
 
 if __name__ == '__main__':
 
+    # folder where the calibration data is saved based on the grid search
     cal_data_dir = r"D:\Data\alternative-fuel-vehicle-abm-cal-data-1"
     if not os.path.exists(cal_data_dir):
         os.mkdir(cal_data_dir)
 
+    # folder where data for the adoption rate diagrams is saved based on the grid search
     data_dir = r"D:\Data\alternative-fuel-vehicle-abm-data-1"
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
 
-    # alpha_phevs = np.linspace(4, 15, 12)
+    # parameter space for srid search
     alpha_phevs = np.linspace(0, 15, 16)
     alpha_bevs = np.linspace(0, 1.5, 16)
+
+    # parameters of the networks
+    # ("SL", L)             - Square Lattice with N = L x L agents
+    # ("WS", N, k, beta)    - Watts-Strogatz network:
+    #                           N - number of agents
+    #                           k - average node degree
+    #                           beta - rewiring probability
     networks = [("SL", 32),
                 ("WS", 1024, 4, 1),
                 ("WS", 1024, 4, 0)]
@@ -53,6 +62,7 @@ if __name__ == '__main__':
     #                                         heterogeneous_bev_susceptibilities=heterogeneous_susceptibilities,
     #                                         heterogeneous_driving_patterns=heterogeneous_driving_patterns)
 
+    # folder where the calibration data is saved based on the tree-structured Parzen estimator algorithm
     hypcal_data_dir = r"D:\Data\alternative-fuel-vehicle-abm-hypcal-data-2"
     if not os.path.exists(hypcal_data_dir):
         os.mkdir(hypcal_data_dir)
@@ -65,6 +75,7 @@ if __name__ == '__main__':
     #                                          heterogeneous_driving_patterns=heterogeneous_driving_patterns,
     #                                          heterogeneous_susceptibilities=heterogeneous_susceptibilities)
 
+    # folder where data for the adoption rate diagrams is saved based on the tree-structured Parzen estimator algorithm
     hypdata_dir = r"D:\Data\alternative-fuel-vehicle-abm-hyp-data-4"
     if not os.path.exists(hypdata_dir):
         os.mkdir(hypdata_dir)
