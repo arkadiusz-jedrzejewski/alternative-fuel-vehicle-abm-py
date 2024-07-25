@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import tikzplotlib
 
 def get_mean_and_quantiles(data):
     q95 = np.quantile(data, q=0.95, axis=0)
@@ -27,11 +27,11 @@ def get_trajectory(number):
     return traj
 
 
-data_dir = r"D:\Data\alternative-fuel-vehicle-abm-hypcal-data-3"
+data_dir = r"D:\Data\alternative-fuel-vehicle-abm-hypcal-data-2"
 
-network_type = "WS"
-heterogeneous_susceptibilities = 1
-heterogeneous_driving_patterns = 1
+network_type = "SL"
+heterogeneous_susceptibilities = 0
+heterogeneous_driving_patterns = 0
 #h_hev, h_phev, h_bev = 0, 0, 1
 
 # if network_type == "SL":
@@ -111,11 +111,11 @@ for vehicle_type in traj.keys():
     mean, q05, q95, sem = get_mean_and_quantiles(traj[vehicle_type])
     means[vehicle_type][0, 0] = mean[-1]
     sems[vehicle_type][0, 0] = sem[-1]
-    ax.fill_between(t_mcs, q05, q95, alpha=0.2)
-    handle, = ax.plot(t_mcs, mean, ':.')
-    handles.append(handle)
+    #ax.fill_between(t_mcs, q05, q95, alpha=0.2)
+    handle, = ax.plot(t_mcs, mean)
+    #handles.append(handle)
 
-ax.legend(handles, ['hev', 'phev', 'bev', 'none'])
+#ax.legend(handles, ['hev', 'phev', 'bev', 'none'])
 
 print(means)
 print(sems)
@@ -123,5 +123,8 @@ print(sems)
 plt.title(model_name)
 plt.xlabel("MCS")
 plt.ylabel("adoption")
+print(folder_name)
+print(f'{data_dir}/{model_name}.tex')
 #plt.savefig(f'{folder_name}/{folder_name}.png')
-plt.show()
+#plt.show()
+tikzplotlib.save(f'{data_dir}/{model_name}.tex')
