@@ -2,6 +2,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12935546.svg)](https://doi.org/10.5281/zenodo.12935546)
 
 Python scripts used to run and analyze our agent-based model (ABM) designed for studing the diffusion of alternative fuel vehicles (AFVs).
+
 Repository with the agent-based model: https://github.com/arkadiusz-jedrzejewski/alternative-fuel-vehicle-abm
 
 ## Citation
