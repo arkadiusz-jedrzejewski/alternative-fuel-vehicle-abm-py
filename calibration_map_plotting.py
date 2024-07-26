@@ -9,6 +9,7 @@ def error_measure(target, data):
     return np.mean((target - data) ** 2)
 
 
+# this script creates calibration maps based on the data stored in data_dir
 data_dir = r"D:\Data\alternative-fuel-vehicle-abm-data"
 adoption_target = [0.489, 0.319, 0.192]
 alpha_phevs = np.linspace(4, 15, 12)  # [2, 3, 4, 5]

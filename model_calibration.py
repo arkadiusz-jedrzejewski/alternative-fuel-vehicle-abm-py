@@ -19,6 +19,9 @@ def create_file(sim_num,
                 h_bev,
                 time_horizon,
                 folder_name):
+    """
+    runs a single simulation of the model
+    """
     file_name = folder_name + f"/sim-{sim_num}.txt"
     if network_type == "SL":
         (L,) = network_parameters
@@ -32,7 +35,7 @@ def create_file(sim_num,
 
 
 if __name__ == '__main__':
-
+    # this script runs simulations for a given set of parameters
     network_type = "SL"  # "SL" - square lattice, "WS" Watts Strogatz network
 
     heterogeneous_hev_susceptibilities = 1

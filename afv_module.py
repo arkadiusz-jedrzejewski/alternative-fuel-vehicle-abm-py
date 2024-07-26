@@ -23,6 +23,9 @@ def create_file(sim_num,
                 h_bev,
                 time_horizon,
                 folder_name):
+    """
+    runs a single simulation of the model
+    """
     file_name = folder_name + f"/sim-{sim_num}.txt"
     network_type = network_params[0]
     if network_type == "SL":
@@ -66,6 +69,23 @@ def run_single_simulation(network_params, heterogeneous_hev_susceptibilities, he
                           heterogeneous_bev_susceptibilities, heterogeneous_driving_patterns,
                           alpha_phev,
                           alpha_bev, h_hev, h_phev, h_bev, num_ave, time_horizon, folder_name):
+    """
+    runs parallely simulations with a given set of parameters
+    :param network_params: tuple of network parameters
+    :param heterogeneous_hev_susceptibilities: 1 if hev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_phev_susceptibilities: 1 if phev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_bev_susceptibilities: 1 if bev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_driving_patterns: 1 if driving patterns  are heterogeneous, 0 if homogeneous
+    :param alpha_phev: phev calibration parameter that shows up in the formula for the refueling effect (RFE), see Eq.(5)
+    :param alpha_bev: bev calibration parameter that shows up in the formula for the refueling effect (RFE), see Eq.(5)
+    :param h_hev: strength of marketing for hev
+    :param h_phev: strength of marketing for phev
+    :param h_bev: strength of marketing for bev
+    :param num_ave: number of independent simulations
+    :param time_horizon: time length of the simulation in Monte Carlo steps (MCS)
+    :param folder_name: name of the folder where the output is saved
+    :return:
+    """
     if not os.path.exists(folder_name):
         os.mkdir(folder_name)
 
@@ -103,11 +123,33 @@ def run_single_simulation(network_params, heterogeneous_hev_susceptibilities, he
 def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params, heterogeneous_hev_susceptibilities,
                               heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
                               heterogeneous_driving_patterns, hs_cal):
+    """
+    run the calibration based on the simple grid-search method, see Appendix B. Grid-search calibration
+    for a chosen values of calibration parameters alpha_phev and alpha_bev stored in lists alpha_phevs and alpha_bevs,
+    it runs simulations and calculates the means square error (MSE)
+    Next, it finds the calibration parameters that minimize MSE
+    :param data_dir: path to the folder where the calibration data is saved
+    :param alpha_phevs: list of phev calibration parameters that show up in the formula for the refueling effect (RFE), see Eq.(5)
+    :param alpha_bevs: list of bev calibration parameters that shows up in the formula for the refueling effect (RFE), see Eq.(5)
+    :param network_params: tuple of network parameters
+    :param heterogeneous_hev_susceptibilities: 1 if hev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_phev_susceptibilities: 1 if phev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_bev_susceptibilities: 1 if bev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_driving_patterns: 1 if driving patterns are heterogeneous, 0 if homogeneous
+    :param hs_cal: tuple of marketing strengths (h_hev, h_phev, h_bev) for which the calibration takes place
+    :return:
+    """
+
+    # tuple of marketing strengths (h_hev, h_phev, h_bev) for which the calibration takes place
     (h_hev_cal, h_phev_cal, h_bev_cal) = hs_cal
+
+    # target adoption levels for hev, phev, and bev
     adoption_target = [0.489, 0.319, 0.192]
 
+    # size of the search calibration parameter space
     num_parms = len(alpha_phevs) * len(alpha_bevs)
 
+    # creating parameter space
     parm_space = [(alpha_phev, alpha_bev) for alpha_phev in alpha_phevs for alpha_bev in alpha_bevs]
 
     model_name = get_model_name(network_name=get_network_name(network_params),
@@ -121,6 +163,7 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
 
     error_dict = {}
     for alpha_phev, alpha_bev in parm_space:
+        # for each calibration parameter set form the calibration parameter space, run simulations
         folder_name = get_folder_name(model_name=model_name,
                                       alpha_phev=alpha_phev,
                                       alpha_bev=alpha_bev,
@@ -140,6 +183,8 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
                               time_horizon=20,
                               folder_name=folder_name)
         sim_numbers = np.arange(int(np.loadtxt(folder_name + "/num_ave.csv")))
+
+        # calculating the mean square error (MSE), see Section 4.5. Model calibration procedures
         total_error = 0
         for sim_number in sim_numbers:
             file_name = folder_name + f"/sim-{sim_number}.txt"
@@ -154,6 +199,7 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
         print("estimated remaining time:\t" + str(datetime.timedelta(seconds=int((num_parms - counter) * ave_time))))
         error_dict[alpha_phev, alpha_bev] = total_error
 
+    # finding the best calibration parameters
     best_parms = min(error_dict, key=error_dict.get)
     print("Best parameters:", best_parms, "MSE:", error_dict[best_parms])
 
@@ -164,6 +210,7 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
         for in2, i2 in enumerate(alpha_bevs):
             errors[in2, in1] = error_dict[(i1, i2)]
 
+    # saving the date from the calibration
     folder_name = data_dir + "/map_results"
     if not os.path.exists(folder_name):
         os.mkdir(folder_name)
@@ -172,6 +219,7 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
     np.savetxt(folder_name + f"/{model_name}_alpha_phevs_m.csv", alpha_phevs_m, fmt="%.18f", delimiter=",")
     np.savetxt(folder_name + f"/{model_name}_alpha_bevs_m.csv", alpha_bevs_m, fmt="%.18f", delimiter=",")
 
+    # saving the best calibration parameters
     best_parms = (best_parms[0], best_parms[1], error_dict[best_parms])
     np.savetxt(folder_name + f"/{model_name}_best_parms.csv", best_parms, fmt="%.18f", delimiter=",")
 
@@ -179,16 +227,32 @@ def run_automated_calibration(data_dir, alpha_phevs, alpha_bevs, network_params,
 def run_diagram_simulations(cal_data_dir, data_dir, network_params, heterogeneous_hev_susceptibilities,
                             heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
                             heterogeneous_driving_patterns):
+    """
+    runs simulations that are used to create diagrams illustrating how changing the strength of marketing
+    of one type of AFV impacts the adoption levels of different AFVs
+    the calibration parameters come from the grid-search calibration and are loaded from cal_data_dir
+    :param cal_data_dir: path to the folder where the calibration data is saved
+    :param data_dir: path to the folder where the diagram data is saved
+    :param network_params: tuple of network parameters
+    :param heterogeneous_hev_susceptibilities: 1 if hev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_phev_susceptibilities: 1 if phev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_bev_susceptibilities: 1 if bev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_driving_patterns: 1 if driving patterns are heterogeneous, 0 if homogeneous
+    :return:
+    """
     model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
                                 heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
                                 heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
+
+    # loading calibration parameters
     alpha_phev, alpha_bev, mse = np.loadtxt(cal_data_dir + f"/map_results/{model_name}_best_parms.csv")
 
     print(
         f"{network_params} {heterogeneous_hev_susceptibilities}_{heterogeneous_phev_susceptibilities}_{heterogeneous_bev_susceptibilities}hs_{heterogeneous_driving_patterns}hdp:\ta_phev={alpha_phev}\ta_bev={alpha_bev}\tMSE={mse}")
 
+    # creating values of marketing strengths for which the simulations are carried out
     num_h = 20
     h_start = 0
     h_end = 4
@@ -213,6 +277,7 @@ def run_diagram_simulations(cal_data_dir, data_dir, network_params, heterogeneou
                                       hs=h_inds,
                                       data_dir=data_dir)
 
+        # running simulations with given parameters
         run_single_simulation(network_params=network_params,
                               heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
                               heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
@@ -236,17 +301,33 @@ def run_diagram_simulations(cal_data_dir, data_dir, network_params, heterogeneou
 def run_diagram_simulations_hyp(cal_data_dir, data_dir, network_params, heterogeneous_hev_susceptibilities,
                                 heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
                                 heterogeneous_driving_patterns):
+    """
+    runs simulations that are used to create diagrams illustrating how changing the strength of marketing
+    of one type of AFV impacts the adoption levels of different AFVs
+    the calibration parameters come from the tree-structured Parzen estimator algorithm and are loaded from cal_data_dir
+    :param cal_data_dir: path to the folder where the calibration data is saved
+    :param data_dir: path to the folder where the diagram data is saved
+    :param network_params: tuple of network parameters
+    :param heterogeneous_hev_susceptibilities: 1 if hev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_phev_susceptibilities: 1 if phev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_bev_susceptibilities: 1 if bev susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_driving_patterns: 1 if driving patterns are heterogeneous, 0 if homogeneous
+    :return:
+    """
     model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
                                 heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
                                 heterogeneous_bev_susceptibilities=heterogeneous_bev_susceptibilities,
                                 heterogeneous_driving_patterns=heterogeneous_driving_patterns)
     print(model_name)
+
+    # loading calibration parameters
     alpha_phev, alpha_bev, ch_hev, ch_phev, ch_bev, mse = np.loadtxt(cal_data_dir + f"/{model_name}_best_parms.csv")
 
     print(
         f"{network_params} {heterogeneous_hev_susceptibilities}_{heterogeneous_phev_susceptibilities}_{heterogeneous_bev_susceptibilities}hs_{heterogeneous_driving_patterns}hdp:\ta_phev={alpha_phev}\ta_bev={alpha_bev}\tMSE={mse}")
 
+    # creating values of marketing strengths for which the simulations are carried out
     num_h = 20
     h_start = 0
     h_end = 4
@@ -281,7 +362,7 @@ def run_diagram_simulations_hyp(cal_data_dir, data_dir, network_params, heteroge
                                           alpha_bev=alpha_bev,
                                           hs=hs_inds,
                                           data_dir=fdata_dir)
-
+            # running simulations
             run_single_simulation(network_params=network_params,
                                   heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
                                   heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
@@ -341,6 +422,9 @@ def get_mean_and_quantiles(folder_name):
 def get_diagram_data(cal_data_dir, data_dir, network_params, heterogeneous_hev_susceptibilities,
                      heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
                      heterogeneous_driving_patterns, h_type):
+    """
+    prepares data for plotting the diagrams
+    """
     model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
                                 heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
@@ -396,6 +480,10 @@ def get_diagram_data(cal_data_dir, data_dir, network_params, heterogeneous_hev_s
 def get_calibration_map(cal_data_dir, network_params, heterogeneous_hev_susceptibilities,
                         heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
                         heterogeneous_driving_patterns):
+    """
+    creates calibration maps: 3d plots illustrating how MSE changes for different values of the calibration parameters
+    from the search-grid calibration
+    """
     model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
                                 heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
@@ -427,6 +515,9 @@ def get_calibration_map(cal_data_dir, network_params, heterogeneous_hev_suscepti
 def get_calibration(cal_data_dir, network_params, heterogeneous_hev_susceptibilities,
                     heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
                     heterogeneous_driving_patterns):
+    """
+    creates plot with the time evolution of the adoption levels of AFVs
+    """
     model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
                                 heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
@@ -468,6 +559,9 @@ def get_calibration(cal_data_dir, network_params, heterogeneous_hev_susceptibili
 def get_calibration_ax(ax, cal_data_dir, network_params, heterogeneous_hev_susceptibilities,
                        heterogeneous_phev_susceptibilities, heterogeneous_bev_susceptibilities,
                        heterogeneous_driving_patterns):
+    """
+    creates plot with the time evolution of the adoption levels of AFVs
+    """
     model_name = get_model_name(network_name=get_network_name(network_params),
                                 heterogeneous_hev_susceptibilities=heterogeneous_hev_susceptibilities,
                                 heterogeneous_phev_susceptibilities=heterogeneous_phev_susceptibilities,
@@ -507,6 +601,9 @@ def get_calibration_ax(ax, cal_data_dir, network_params, heterogeneous_hev_susce
 
 
 def get_diagram(cal_data_dir, data_dir, network_params, h_type):
+    """
+    creates diagram illustrating how changing a given marketing strength impacts the adoption levels of AFVs
+    """
     result_folder_name = data_dir + f"/diagram_data"
     network_name = get_network_name(network_params=network_params)
     title_string = ""
@@ -559,7 +656,7 @@ def get_diagram(cal_data_dir, data_dir, network_params, h_type):
     ax[0].plot([0, 4], [0.489] * 2, 'black')
     ax[1].plot([0, 4], [0.319] * 2, 'black')
     ax[2].plot([0, 4], [0.192] * 2, 'black')
-    #plt.legend(loc="upper right")
+    # plt.legend(loc="upper right")
     plt.tight_layout()
 
     plot_folder_name = data_dir + f"/diagram_plots"
@@ -568,12 +665,16 @@ def get_diagram(cal_data_dir, data_dir, network_params, h_type):
     print(plot_folder_name + "/" + network_name + f"_{h_type}" + ".tex")
     tikzplotlib.save(plot_folder_name + "/" + network_name + f"_{h_type}" + ".tex", axis_height='\\figH',
                      axis_width='\\figW')
-    #plt.savefig(plot_folder_name + "/" + network_name + f"_{h_type}" + ".png")
-    #plt.show()
+    # plt.savefig(plot_folder_name + "/" + network_name + f"_{h_type}" + ".png")
+    # plt.show()
 
 
 def objective_hyperopt(params, network_params, heterogeneous_hev_susceptibilities, heterogeneous_phev_susceptibilities,
                        heterogeneous_bev_susceptibilities, heterogeneous_driving_patterns, data_dir):
+    """
+    loss function used for the tree-structured Parzen estimator algorithm
+    :return: the mean squared error (MSE)
+    """
     alpha_phev, alpha_bev, h_hev, h_phev, h_bev = params['alpha_phev'], params['alpha_bev'], params[
         'h_hev'], params['h_phev'], params['h_bev']
     adoption_target = [0.489, 0.319, 0.192]
@@ -615,6 +716,14 @@ def objective_hyperopt(params, network_params, heterogeneous_hev_susceptibilitie
 
 def run_automatedhyp_calibration(hypcal_data_dir, network_params, heterogeneous_susceptibilities,
                                  heterogeneous_driving_patterns):
+    """
+    runs a model calibration based on the tree-structured Parzen estimator algorithm
+    :param hypcal_data_dir: path to the folder where the calibration data is saved
+    :param network_params: tuple of network parameters
+    :param heterogeneous_susceptibilities: 1 if susceptibilities are heterogeneous, 0 if homogeneous
+    :param heterogeneous_driving_patterns: 1 if driving patterns are heterogeneous, 0 if homogeneous
+    :return:
+    """
     objective = partial(objective_hyperopt,
                         network_params=network_params,
                         heterogeneous_hev_susceptibilities=heterogeneous_susceptibilities,
@@ -622,6 +731,8 @@ def run_automatedhyp_calibration(hypcal_data_dir, network_params, heterogeneous_
                         heterogeneous_bev_susceptibilities=heterogeneous_susceptibilities,
                         heterogeneous_driving_patterns=heterogeneous_driving_patterns,
                         data_dir=hypcal_data_dir)
+
+    # define the calibration parameter space
     space = {
         'alpha_phev': hp.uniform('alpha_phev', 0, 14),
         'alpha_bev': hp.uniform('alpha_bev', 0, 1.5),

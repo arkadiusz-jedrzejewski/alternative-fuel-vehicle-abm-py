@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tikzplotlib
 
+
 def get_mean_and_quantiles(data):
     q95 = np.quantile(data, q=0.95, axis=0)
     q05 = np.quantile(data, q=0.05, axis=0)
@@ -26,14 +27,15 @@ def get_trajectory(number):
 
     return traj
 
-
+# this script creates time evolution plots
 data_dir = r"D:\Data\alternative-fuel-vehicle-abm-hypcal-data-2"
 
 network_type = "SL"
 heterogeneous_susceptibilities = 0
 heterogeneous_driving_patterns = 0
-#h_hev, h_phev, h_bev = 0, 0, 1
+# h_hev, h_phev, h_bev = 0, 0, 1
 
+# for data based on the grid-search calibration
 # if network_type == "SL":
 #     L = 32  # linear system size (N = L x L: number of agents)
 #     network_parameters = (L,)
@@ -55,12 +57,15 @@ heterogeneous_driving_patterns = 0
 #     print(best_parms)
 #
 #     folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
+
+# for data based on the tree-structured Parzen estimator algorithm
 if network_type == "SL":
     L = 32  # linear system size (N = L x L: number of agents)
     network_parameters = (L,)
     model_name = f"{network_type}_{L}L_{heterogeneous_susceptibilities}_{heterogeneous_susceptibilities}_{heterogeneous_susceptibilities}hs_{heterogeneous_driving_patterns}hdp"
     best_parms = np.loadtxt(f"{data_dir}/{model_name}_best_parms.csv")
-    alpha_phev, alpha_bev, h_hev, h_phev, h_bev, mse = best_parms[0], best_parms[1],  best_parms[2], best_parms[3], best_parms[4], best_parms[5]
+    alpha_phev, alpha_bev, h_hev, h_phev, h_bev, mse = best_parms[0], best_parms[1], best_parms[2], best_parms[3], \
+    best_parms[4], best_parms[5]
     print(alpha_phev, alpha_bev, h_hev, h_phev, h_bev, mse)
     print(best_parms)
     folder_name = data_dir + f"/{model_name}" + f"_{alpha_phev}aphev_{alpha_bev}abev_{h_hev}_{h_phev}_{h_bev}"
@@ -73,7 +78,7 @@ elif network_type == "WS":
     best_parms = np.loadtxt(f"{data_dir}/{model_name}_best_parms.csv")
     alpha_phev, alpha_bev, mse = best_parms[0], best_parms[1], best_parms[2]
     alpha_phev, alpha_bev, h_hev, h_phev, h_bev, mse = best_parms[0], best_parms[1], best_parms[2], best_parms[3], \
-    best_parms[4], best_parms[5]
+        best_parms[4], best_parms[5]
     print(alpha_phev, alpha_bev, h_hev, h_phev, h_bev, mse)
     print(best_parms)
 
@@ -111,11 +116,11 @@ for vehicle_type in traj.keys():
     mean, q05, q95, sem = get_mean_and_quantiles(traj[vehicle_type])
     means[vehicle_type][0, 0] = mean[-1]
     sems[vehicle_type][0, 0] = sem[-1]
-    #ax.fill_between(t_mcs, q05, q95, alpha=0.2)
+    # ax.fill_between(t_mcs, q05, q95, alpha=0.2)
     handle, = ax.plot(t_mcs, mean)
-    #handles.append(handle)
+    # handles.append(handle)
 
-#ax.legend(handles, ['hev', 'phev', 'bev', 'none'])
+# ax.legend(handles, ['hev', 'phev', 'bev', 'none'])
 
 print(means)
 print(sems)
@@ -125,6 +130,6 @@ plt.xlabel("MCS")
 plt.ylabel("adoption")
 print(folder_name)
 print(f'{data_dir}/{model_name}.tex')
-#plt.savefig(f'{folder_name}/{folder_name}.png')
-#plt.show()
+# plt.savefig(f'{folder_name}/{folder_name}.png')
+# plt.show()
 tikzplotlib.save(f'{data_dir}/{model_name}.tex')
