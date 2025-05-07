@@ -10,10 +10,12 @@ If you find this code helpful or use it in your work, please cite the following 
 ```
 @article{Jed:etal:24,
   title = {Everyone is different, but does it matter? The role of heterogeneity in empirically grounded agent-based models of alternative fuel vehicles diffusion},
-  author = {Arkadiusz J\k{e}drzejewski, Anna Kowalska-Pyzalska, Jakub Paw{\l}owski, Katarzyna Sznajd-Weron},
-  journal = {},
-  volume = {},
-  year = {},
-  doi = {},
+  author = {J{\k{e}}drzejewski, Arkadiusz and Kowalska-Pyzalska, Anna and Paw{\l}owski, Jakub and Sznajd-Weron, Katarzyna},
+  journal={Operations Research and Decisions},
+  volume={35},
+  number={1},
+  pages={45--80},
+  year={2025},
+  doi = {10.37190/ord250103},
 }
 ```
